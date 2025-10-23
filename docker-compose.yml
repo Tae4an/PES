@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # PostgreSQL + PostGIS
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: pes-postgres
+    environment:
+      POSTGRES_DB: pes
+      POSTGRES_USER: pes_user
+      POSTGRES_PASSWORD: pes_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/app/db/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pes_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pes_user -d pes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7.2-alpine
+    container_name: pes-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pes_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Ollama (Qwen3 8B 로컬 LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pes-ollama
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - pes_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pes-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://pes_user:pes_password@postgres:5432/pes
+      REDIS_URL: redis://redis:6379
+      OLLAMA_ENDPOINT: http://ollama:11434
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - pes_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+networks:
+  pes_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  ollama_data:
+
