@@ -8,7 +8,7 @@ import logging
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.endpoints import user, shelters, disasters, health, admin
+from app.api.v1.endpoints import user, shelters, disasters, health, admin, action_cards
 from app.background.tasks import disaster_polling_task
 
 # 로깅 설정
@@ -73,6 +73,12 @@ app.include_router(
     disasters.router,
     prefix="/api/v1/disasters",
     tags=["Disasters"]
+)
+
+app.include_router(
+    action_cards.router,
+    prefix="/api/v1/action-cards",
+    tags=["Action Cards"]
 )
 
 app.include_router(
