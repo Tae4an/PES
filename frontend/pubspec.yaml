@@ -1,0 +1,83 @@
+name: pes_frontend
+description: Personal Emergency Siren - 재난 대피 행동 카드 앱
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # 상태 관리
+  flutter_riverpod: ^2.4.10
+  riverpod_annotation: ^2.3.5
+  
+  # API 통신
+  dio: ^5.4.0
+  retrofit: ^4.1.0
+  json_annotation: ^4.8.1
+  
+  # 지도 & 위치
+  google_maps_flutter: ^2.5.3
+  geolocator: ^11.0.0
+  geocoding: ^2.2.0
+  
+  # Firebase
+  # firebase_core: ^2.24.2
+  # firebase_messaging: ^14.7.9
+  
+  # UI/UX
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.3.0
+  lottie: ^3.0.0
+  shimmer: ^3.0.0
+  cached_network_image: ^3.3.1
+  
+  # 로컬 저장소
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  
+  # 라우팅
+  go_router: ^13.0.0
+  
+  # 로깅 & 모니터링
+  logger: ^2.0.2+1
+  # sentry_flutter: ^7.14.0  # Temporarily disabled due to Kotlin compatibility issues
+  
+  # 유틸리티
+  intl: ^0.19.0
+  url_launcher: ^6.2.3
+  permission_handler: ^11.2.0
+  flutter_dotenv: ^5.1.0
+  # flutter_local_notifications: ^16.3.2  # Temporarily disabled
+  
+  # 아이콘
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  
+  # 코드 생성
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.8
+  retrofit_generator: ^8.1.0
+  json_serializable: ^6.7.1
+  hive_generator: ^2.0.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/lottie/
+    - .env
+
