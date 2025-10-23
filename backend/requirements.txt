@@ -39,7 +39,7 @@ sentry-sdk[fastapi]==1.40.0
 python-dotenv==1.0.1
 
 # Testing
-pytest==8.0.0
+pytest==7.4.4
 pytest-asyncio==0.23.4
 httpx==0.26.0
 
