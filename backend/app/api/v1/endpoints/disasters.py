@@ -1,15 +1,21 @@
 """
 재난 관련 API 엔드포인트
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional
 from datetime import datetime
 import logging
 
 from ....db.session import get_db
 from ....services.llm_service import LLMService
 from ....services.shelter_finder import ShelterFinder
-from ....api.v1.schemas.disaster import ActionCardGenerateRequest, ActionCardResponse
+from ....services.disaster_service import disaster_service
+from ....api.v1.schemas.disaster import (
+    ActionCardGenerateRequest,
+    ActionCardResponse,
+    MockDisasterMessage
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,5 +79,105 @@ async def generate_action_card(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="행동카드 생성 실패"
+        )
+
+
+@router.get("/mock", response_model=List[MockDisasterMessage])
+async def get_mock_disasters(
+    limit: int = Query(5, ge=1, le=50, description="반환할 재난문자 개수"),
+    category: Optional[str] = Query(None, description="재난 구분 필터 (기상특보, 지진, 교통, 사회재난)"),
+    start_date: Optional[str] = Query(None, description="시작 날짜 (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="종료 날짜 (YYYY-MM-DD)")
+):
+    """
+    Mock 재난문자 조회 (CSV 기반)
+    
+    **환경변수 USE_MOCK_DATA=true 일 때 사용**
+    
+    - 최신 재난문자부터 반환
+    - 카테고리/날짜 범위로 필터링 가능
+    - 실제 API 복구 시 자동 전환
+    
+    **예시:**
+    - `/api/v1/disasters/mock?limit=10` - 최신 10개
+    - `/api/v1/disasters/mock?category=지진` - 지진 관련만
+    - `/api/v1/disasters/mock?start_date=2025-01-10&end_date=2025-01-15` - 날짜 범위
+    """
+    try:
+        # Mock 모드가 아닐 경우 경고
+        if not disaster_service.is_mock_mode:
+            logger.warning("⚠️  Mock 모드가 비활성화되어 있습니다. 실제 API를 사용 중입니다.")
+        
+        # 필터링 조건이 있으면 필터링, 없으면 최신 N개
+        if category or start_date or end_date:
+            disasters = disaster_service.filter_mock_disasters(
+                category=category,
+                start_date=start_date,
+                end_date=end_date
+            )
+            # 필터링 후 limit 적용
+            return disasters[:limit]
+        else:
+            return disaster_service.get_mock_disasters(limit=limit)
+    
+    except Exception as e:
+        logger.error(f"❌ Mock 재난문자 조회 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"재난문자 조회 실패: {str(e)}"
+        )
+
+
+@router.get("/mock/all", response_model=List[MockDisasterMessage])
+async def get_all_mock_disasters():
+    """
+    전체 Mock 재난문자 조회
+    
+    **CSV 파일의 모든 재난문자를 반환**
+    
+    - 최신순 정렬
+    - 통계 분석 및 테스트용
+    """
+    try:
+        disasters = disaster_service.get_all_mock_disasters()
+        
+        logger.info(f"✅ 전체 Mock 재난문자 반환: {len(disasters)}개")
+        
+        return disasters
+    
+    except Exception as e:
+        logger.error(f"❌ 전체 Mock 재난문자 조회 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"재난문자 조회 실패: {str(e)}"
+        )
+
+
+@router.get("/mock/statistics")
+async def get_disaster_statistics():
+    """
+    재난 통계 정보
+    
+    **카테고리별 재난 발생 건수를 반환**
+    
+    - 기상특보, 지진, 교통, 사회재난 등 분류별 집계
+    - 데이터 분석 및 대시보드용
+    """
+    try:
+        stats = disaster_service.get_disaster_statistics()
+        total = sum(stats.values())
+        
+        return {
+            "total_disasters": total,
+            "by_category": stats,
+            "data_source": disaster_service.data_source,
+            "mock_mode": disaster_service.is_mock_mode
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ 재난 통계 조회 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"통계 조회 실패: {str(e)}"
         )
 

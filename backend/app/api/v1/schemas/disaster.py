@@ -38,3 +38,24 @@ class ActionCardResponse(BaseModel):
     generated_at: datetime = Field(default_factory=datetime.utcnow)
     generation_method: str = Field(..., description="생성 방법: llm 또는 fallback")
 
+
+class MockDisasterMessage(BaseModel):
+    """Mock 재난문자 메시지 (CSV 기반)"""
+    serial_number: int = Field(..., description="연번")
+    date: str = Field(..., description="발생 날짜 (YYYY-MM-DD)")
+    time: str = Field(..., description="발생 시간 (HH:MM)")
+    category: str = Field(..., description="구분 (기상특보, 지진, 교통 등)")
+    message: str = Field(..., description="문자전송내용")
+    issued_at: datetime = Field(..., description="발령 시각 (날짜+시간 조합)")
+    
+    class Config:
+        from_attributes = True
+
+
+class MockModeStatus(BaseModel):
+    """Mock 모드 상태"""
+    mock_mode_enabled: bool = Field(..., description="Mock 모드 활성화 여부")
+    data_source: str = Field(..., description="데이터 소스: 'mock_csv' 또는 'real_api'")
+    total_mock_messages: int = Field(..., description="Mock 데이터 총 개수")
+    message: str = Field(..., description="상태 메시지")
+
