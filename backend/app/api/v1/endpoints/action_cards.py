@@ -3,6 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 import logging
 from datetime import datetime
+from uuid import UUID, uuid4
 
 from ....services.llm_service import LLMService
 from ...v1.schemas.shelter import ShelterInfo
@@ -59,26 +60,33 @@ async def generate_action_card(request: ActionCardRequest):
     ```
     """
     try:
+        logger.info(f"🚀 Action Card 생성 요청: disaster_id={request.disaster_id}, location=({request.latitude}, {request.longitude})")
+        
         # 1. 재난 정보 조회 (Mock - 실제로는 DB에서)
         disaster_type = _get_disaster_type(request.disaster_id)
         location = "제주도"  # Mock 위치
+        logger.info(f"📍 재난 유형: {disaster_type}, 위치: {location}")
         
         # 2. 주변 대피소 검색 (Mock - 실제로는 ShelterFinder 사용)
         shelters = _get_mock_shelters(request.latitude, request.longitude)
+        logger.info(f"🏠 대피소 {len(shelters)}개 검색됨")
         
         # 3. 사용자 프로필
         user_profile = {
             "age_group": request.age_group,
             "mobility": request.mobility
         }
+        logger.info(f"👤 사용자 프로필: {user_profile}")
         
         # 4. AI 기반 행동 카드 생성
+        logger.info("🤖 LLM Service 호출 시작...")
         action_text, generation_method = await llm_service.generate_action_card(
             disaster_type=disaster_type,
             location=location,
             user_profile=user_profile,
             shelters=shelters
         )
+        logger.info(f"📝 생성 완료: method={generation_method}, text_length={len(action_text)}")
         
         # 5. 응답 생성
         action_card = _build_action_card_response(
@@ -109,7 +117,7 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
     # 실제로는 ShelterFinder.get_shelters_within_radius() 사용
     return [
         ShelterInfo(
-            id=1,
+            id=uuid4(),
             name="제주시민회관 대피소",
             address="제주시 동광로 20",
             shelter_type="지진해일대피소",
@@ -120,7 +128,7 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
             walking_minutes=10
         ),
         ShelterInfo(
-            id=2,
+            id=uuid4(),
             name="제주도청 비상대피소",
             address="제주시 문연로 6",
             shelter_type="민방위대피소",
@@ -131,7 +139,7 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
             walking_minutes=15
         ),
         ShelterInfo(
-            id=3,
+            id=uuid4(),
             name="제주중앙초등학교 대피소",
             address="제주시 중앙로 213",
             shelter_type="지진해일대피소",
