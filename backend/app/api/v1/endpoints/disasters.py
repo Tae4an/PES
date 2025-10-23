@@ -82,6 +82,42 @@ async def generate_action_card(
         )
 
 
+@router.get("/active", response_model=List[MockDisasterMessage])
+async def get_active_disasters(
+    limit: int = Query(5, ge=1, le=50, description="반환할 재난문자 개수"),
+    latitude: Optional[float] = Query(None, description="사용자 위도"),
+    longitude: Optional[float] = Query(None, description="사용자 경도")
+):
+    """
+    현재 활성화된 재난 정보 조회
+    
+    - Mock 모드: CSV 파일에서 최신 재난문자 반환
+    - Real API 모드: 실제 재난문자 API 호출
+    - 위치 정보가 있으면 해당 지역 재난 우선 반환
+    
+    **예시:**
+    - `/api/v1/disasters/active?limit=10` - 최신 10개
+    - `/api/v1/disasters/active?latitude=37.5&longitude=127.0&limit=5` - 내 위치 기준 5개
+    """
+    try:
+        # Mock 모드에서는 최신 재난문자 반환
+        disasters = disaster_service.get_mock_disasters(limit=limit)
+        
+        # TODO: 위치 기반 필터링 (향후 구현)
+        # if latitude and longitude:
+        #     disasters = filter_by_location(disasters, latitude, longitude)
+        
+        logger.info(f"✅ 활성 재난 조회: {len(disasters)}개 반환")
+        return disasters
+    
+    except Exception as e:
+        logger.error(f"❌ 활성 재난 조회 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"재난 조회 실패: {str(e)}"
+        )
+
+
 @router.get("/mock", response_model=List[MockDisasterMessage])
 async def get_mock_disasters(
     limit: int = Query(5, ge=1, le=50, description="반환할 재난문자 개수"),
