@@ -117,8 +117,6 @@ flutter build ios --release    # iOS
 # 유닛 테스트
 flutter test
 
-# 위젯 테스트
-flutter test test/widget_test.dart
 
 # 통합 테스트
 flutter drive --target=test_driver/app.dart
