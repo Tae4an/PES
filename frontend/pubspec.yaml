@@ -51,7 +51,7 @@ dependencies:
   # sentry_flutter: ^7.14.0  # Temporarily disabled due to Kotlin compatibility issues
   
   # 유틸리티
-  intl: ^0.19.0
+  # intl은 flutter_localizations가 자동으로 관리
   url_launcher: ^6.2.3
   permission_handler: ^11.2.0
   flutter_dotenv: ^5.1.0
