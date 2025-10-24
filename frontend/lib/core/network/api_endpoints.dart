@@ -21,6 +21,12 @@ class ApiEndpoints {
   static const String actionCards = '$base/action-cards';
   static const String generateActionCard = '$actionCards/generate';
 
+  // FCM
+  static const String fcm = '$base/fcm';
+  static const String registerFcmToken = '$fcm/token/register';
+  static const String testNotification = '$fcm/test/notification';
+  static const String fcmStatus = '$fcm/status';
+
   // Users
   static const String users = '$base/users';
   static const String registerUser = '$users/register';
