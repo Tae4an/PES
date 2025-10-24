@@ -1,6 +1,7 @@
 """
 PES 백엔드 설정 파일
 """
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -58,6 +59,13 @@ class Settings(BaseSettings):
     # Google Maps (향후 사용)
     GOOGLE_MAPS_API_KEY: Optional[str] = None
     GOOGLE_GEOCODING_API_URL: str = "https://maps.googleapis.com/maps/api/geocode/json"
+    
+    # Firebase Configuration
+    FIREBASE_CREDENTIALS_PATH: str = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "credentials",
+        "firebase-service-account.json"
+    )
     
     class Config:
         env_file = ".env"
