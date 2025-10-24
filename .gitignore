@@ -1,0 +1,23 @@
+# 프로젝트 전체 공통 설정
+# (백엔드/프론트엔드 전용 설정은 각 디렉토리의 .gitignore 참고)
+
+# Environment (프로젝트 전체)
+.env
+.env.local
+
+# IDE (프로젝트 루트 레벨)
+.vscode/
+.idea/
+
+# OS (프로젝트 전체)
+.DS_Store
+Thumbs.db
+
+# Docker volumes (프로젝트 전체)
+postgres_data/
+ollama_data/
+
+# 프로젝트 전체 credentials
+credentials.json
+firebase-credentials.json
+
