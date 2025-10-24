@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'firebase_options.dart';
 import 'config/theme.dart';
 import 'config/router_config.dart';
 import 'config/env_config.dart';
@@ -39,7 +40,9 @@ void main() async {
 
   // Firebase 초기화
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     AppLogger.i('Firebase 초기화 완료');
 
     // Firebase Background 메시지 핸들러 설정
