@@ -4,6 +4,28 @@ import '../../config/constants.dart';
 
 /// Dio HTTP 클라이언트 설정
 class DioClient {
+  late final Dio _dio;
+
+  DioClient() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        connectTimeout: AppConstants.connectionTimeout,
+        receiveTimeout: AppConstants.receiveTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    // 인터셉터 추가
+    _dio.interceptors.add(_LoggingInterceptor());
+    _dio.interceptors.add(_ErrorInterceptor());
+  }
+
+  Dio get dio => _dio;
+
   static Dio createDio() {
     final dio = Dio(
       BaseOptions(

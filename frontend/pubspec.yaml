@@ -27,8 +27,8 @@ dependencies:
   geocoding: ^2.2.0
   
   # Firebase
-  # firebase_core: ^2.24.2
-  # firebase_messaging: ^14.7.9
+  firebase_core: ^2.24.2
+  firebase_messaging: ^14.7.9
   
   # UI/UX
   google_fonts: ^6.1.0
