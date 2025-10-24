@@ -1,84 +1,58 @@
 """
 재난 관련 API 엔드포인트
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, status, Query
 from typing import List, Optional
-from datetime import datetime
 import logging
 
-from ....db.session import get_db
-from ....services.llm_service import LLMService
-from ....services.shelter_finder import ShelterFinder
 from ....services.disaster_service import disaster_service
-from ....api.v1.schemas.disaster import (
-    ActionCardGenerateRequest,
-    ActionCardResponse,
-    MockDisasterMessage
-)
+from ....api.v1.schemas.disaster import MockDisasterMessage
+
+# Phase 2: DB 연동 시 활성화 예정
+# from sqlalchemy.ext.asyncio import AsyncSession
+# from ....db.session import get_db
+# from ....services.shelter_finder import ShelterFinder
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Note: Action Card 생성은 /api/v1/action-cards/generate 엔드포인트 사용
 
-@router.post("/action-card/generate", response_model=ActionCardResponse)
-async def generate_action_card(
-    request: ActionCardGenerateRequest,
-    db: AsyncSession = Depends(get_db)
+
+@router.get("/active", response_model=List[MockDisasterMessage])
+async def get_active_disasters(
+    limit: int = Query(5, ge=1, le=50, description="반환할 재난문자 개수"),
+    latitude: Optional[float] = Query(None, description="사용자 위도"),
+    longitude: Optional[float] = Query(None, description="사용자 경도")
 ):
     """
-    행동카드 생성 (테스트용)
+    현재 활성화된 재난 정보 조회
     
-    LLM을 사용하여 개인화된 재난 행동카드 생성
+    - Mock 모드: CSV 파일에서 최신 재난문자 반환
+    - Real API 모드: 실제 재난문자 API 호출
+    - 위치 정보가 있으면 해당 지역 재난 우선 반환
+    
+    **예시:**
+    - `/api/v1/disasters/active?limit=10` - 최신 10개
+    - `/api/v1/disasters/active?latitude=37.5&longitude=127.0&limit=5` - 내 위치 기준 5개
     """
     try:
-        # 주변 대피소 검색
-        shelter_finder = ShelterFinder(db)
-        shelters = await shelter_finder.get_shelters_within_radius(
-            latitude=request.user_latitude,
-            longitude=request.user_longitude,
-            radius_km=2.0,
-            limit=3
-        )
+        # Mock 모드에서는 최신 재난문자 반환
+        disasters = disaster_service.get_mock_disasters(limit=limit)
         
-        # LLM으로 행동카드 생성
-        llm_service = LLMService()
+        # TODO: 위치 기반 필터링 (향후 구현)
+        # if latitude and longitude:
+        #     disasters = filter_by_location(disasters, latitude, longitude)
         
-        user_profile = {
-            "age_group": request.age_group,
-            "mobility": request.mobility
-        }
-        
-        action_card, generation_method = await llm_service.generate_action_card(
-            disaster_type=request.disaster_type,
-            location=request.location,
-            user_profile=user_profile,
-            shelters=shelters
-        )
-        
-        logger.info(f"Action card generated via {generation_method}")
-        
-        return ActionCardResponse(
-            action_card=action_card,
-            shelters=[
-                {
-                    "name": s.name,
-                    "address": s.address,
-                    "distance_km": s.distance_km,
-                    "walking_minutes": s.walking_minutes
-                }
-                for s in shelters
-            ],
-            generated_at=datetime.utcnow(),
-            generation_method=generation_method
-        )
-        
+        logger.info(f"✅ 활성 재난 조회: {len(disasters)}개 반환")
+        return disasters
+    
     except Exception as e:
-        logger.error(f"Error generating action card: {str(e)}")
+        logger.error(f"❌ 활성 재난 조회 실패: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="행동카드 생성 실패"
+            detail=f"재난 조회 실패: {str(e)}"
         )
 
 

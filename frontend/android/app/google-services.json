@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "509004820305",
+    "project_id": "personal-emergency-siren-e8f88",
+    "storage_bucket": "personal-emergency-siren-e8f88.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:509004820305:android:c32d5ae6ea3813e7012d70",
+        "android_client_info": {
+          "package_name": "com.pes.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjnw_PD_bGgEkBv9o0tn5EnHbL_FmwSaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

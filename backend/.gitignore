@@ -27,7 +27,10 @@ wheels/
 .env
 .env.local
 
-# Firebase
+# Firebase (보안 중요!)
+credentials/
+*.json
+!*.json.example
 credentials.json
 firebase-credentials.json
 

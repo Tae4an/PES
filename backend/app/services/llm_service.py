@@ -61,32 +61,42 @@ class LLMService:
         
         try:
             # Ollama API 호출
+            logger.info(f"🔍 Ollama Request: model={self.model}, prompt_length={len(prompt)}, endpoint={self.ollama_endpoint}")
+            logger.debug(f"🔍 Full prompt:\n{prompt[:200]}...")
+            
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.ollama_endpoint}/api/generate",
                     json={
                         "model": self.model,
                         "prompt": prompt,
-                        "stream": False,
-                        "options": {
-                            "temperature": self.temperature,
-                            "top_p": 0.9,
-                            "top_k": 40,
-                            "num_predict": 200
-                        }
+                        "stream": False
+                        # options 제거 - Qwen3 모델이 thinking 모드로 전환되는 것을 방지
                     }
                 )
             
             if response.status_code == 200:
                 result = response.json()
+                # Qwen3 모델은 thinking 모드에서 response가 비어있을 수 있음
                 action_card = result.get('response', '').strip()
                 
+                logger.info(f"🔍 Ollama API Response: response={action_card[:50] if action_card else '(empty)'}")
+                logger.debug(f"🔍 Full response field: {action_card}")
+                
+                # response가 비어있으면 thinking 필드 사용
+                if not action_card:
+                    action_card = result.get('thinking', '').strip()
+                    logger.info(f"Using thinking field as response is empty")
+                
                 # 검증
-                if self._validate_action_card(action_card):
-                    logger.info(f"LLM action card generated successfully for {disaster_type}")
+                is_valid = self._validate_action_card(action_card)
+                logger.info(f"🔍 Validation result: {is_valid}, length={len(action_card)}, lines={len([l for l in action_card.split(chr(10)) if l.strip()])}")
+                
+                if action_card and is_valid:
+                    logger.info(f"✅ LLM action card generated successfully for {disaster_type}")
                     return action_card, "llm"
                 else:
-                    logger.warning(f"LLM response validation failed: {action_card}")
+                    logger.warning(f"❌ LLM response validation failed: {action_card[:100] if action_card else 'empty'}")
                     return self._get_fallback_template(disaster_type, shelters), "fallback"
             
             else:
@@ -113,31 +123,14 @@ class LLMService:
         age_group = user_profile.get('age_group', '성인')
         mobility = user_profile.get('mobility', '정상')
         
-        prompt = f"""당신은 대한민국 정부의 재난안전 전문가입니다.
-현재 재난 상황에서 시민이 즉시 실행할 수 있는 구체적이고 명확한 행동 지침을 작성하세요.
+        # Instruction 태그를 사용하여 한글 응답 유도
+        nearest_shelter = shelters_text.split('\n')[0] if shelters_text else '대피소 정보 없음'
+        
+        prompt = f"""[INST]{disaster_type} 재난 발생. {location}에서 {age_group} 시민을 위한 즉시 대피 행동 지침을 3~5줄로 작성하세요.
 
-[재난 정보]
-- 재난 유형: {disaster_type}
-- 발생 지역: {location}
-- 현재 시각: {current_time}
+가장 가까운 대피소: {nearest_shelter}
 
-[사용자 정보]
-- 연령대: {age_group}
-- 이동성: {mobility}
-
-[주변 대피소]
-{shelters_text}
-
-[작성 규칙]
-1. 정확히 3~5줄 이내로 작성
-2. 즉시 실행 가능한 구체적 행동만 포함
-3. 금지 사항을 명확히 명시 (예: "엘리베이터 사용 금지")
-4. 안전 주의사항 포함 (예: "미끄러운 바닥 주의")
-5. 행정안전부 공식 지침만 참고
-6. 불필요한 설명, 인사말, 추측 절대 금지
-7. 반말 또는 명령형 어투 사용
-
-행동 카드:"""
+한글로만 작성하고, 명령형으로 즉시 실행 가능한 행동만 포함하세요.[/INST]"""
         
         return prompt
     

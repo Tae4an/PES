@@ -1,6 +1,7 @@
 """
 PES 백엔드 설정 파일
 """
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -22,8 +23,8 @@ class Settings(BaseSettings):
     
     # Ollama (별도 AI 서버에서 실행)
     OLLAMA_ENDPOINT: str = "http://localhost:11434"  # 로컬 AI 서버
-    OLLAMA_MODEL: str = "qwen3:8b-instruct"
-    OLLAMA_TIMEOUT: int = 15
+    OLLAMA_MODEL: str = "qwen3:8b" 
+    OLLAMA_TIMEOUT: int = 30  # AI 응답 대기 시간 (초)
     OLLAMA_TEMPERATURE: float = 0.3
     
     # 행정안전부 재난문자 API
@@ -58,6 +59,13 @@ class Settings(BaseSettings):
     # Google Maps (향후 사용)
     GOOGLE_MAPS_API_KEY: Optional[str] = None
     GOOGLE_GEOCODING_API_URL: str = "https://maps.googleapis.com/maps/api/geocode/json"
+    
+    # Firebase Configuration
+    FIREBASE_CREDENTIALS_PATH: str = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "credentials",
+        "firebase-service-account.json"
+    )
     
     class Config:
         env_file = ".env"

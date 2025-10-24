@@ -8,8 +8,10 @@ import logging
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.endpoints import user, shelters, disasters, health, admin
-from app.background.tasks import disaster_polling_task
+from app.api.v1.endpoints import disasters, health, admin, action_cards, fcm
+# Phase 2: DB 연동 시 활성화 예정
+# from app.api.v1.endpoints import user, shelters
+# from app.background.tasks import disaster_polling_task
 
 # 로깅 설정
 logger = setup_logging()
@@ -21,16 +23,17 @@ async def lifespan(app: FastAPI):
     # 시작 시
     logger.info("Starting PES Backend...")
     
-    # 백그라운드 폴링 시작
-    await disaster_polling_task.start()
-    logger.info("Disaster polling task started")
+    # Phase 2: 백그라운드 재난 폴링 (DB 연동 시 활성화)
+    # await disaster_polling_task.start()
+    # logger.info("Disaster polling task started")
     
     yield
     
     # 종료 시
     logger.info("Shutting down PES Backend...")
-    await disaster_polling_task.stop()
-    logger.info("Disaster polling task stopped")
+    # Phase 2: 백그라운드 태스크 종료
+    # await disaster_polling_task.stop()
+    # logger.info("Disaster polling task stopped")
 
 
 # FastAPI 앱 생성
@@ -57,17 +60,17 @@ app.include_router(
     tags=["Health"]
 )
 
-app.include_router(
-    user.router,
-    prefix="/api/v1/user",
-    tags=["User"]
-)
-
-app.include_router(
-    shelters.router,
-    prefix="/api/v1/shelters",
-    tags=["Shelters"]
-)
+# Phase 2: 사용자 프로필 및 대피소 API (DB 연동 시 활성화)
+# app.include_router(
+#     user.router,
+#     prefix="/api/v1/user",
+#     tags=["User"]
+# )
+# app.include_router(
+#     shelters.router,
+#     prefix="/api/v1/shelters",
+#     tags=["Shelters"]
+# )
 
 app.include_router(
     disasters.router,
@@ -76,9 +79,21 @@ app.include_router(
 )
 
 app.include_router(
+    action_cards.router,
+    prefix="/api/v1/action-cards",
+    tags=["Action Cards"]
+)
+
+app.include_router(
     admin.router,
     prefix="/api/v1/admin",
     tags=["Admin"]
+)
+
+app.include_router(
+    fcm.router,
+    prefix="/api/v1/fcm",
+    tags=["FCM"]
 )
 
 
