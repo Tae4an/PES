@@ -8,7 +8,7 @@ import logging
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.endpoints import disasters, health, admin, action_cards
+from app.api.v1.endpoints import disasters, health, admin, action_cards, fcm
 # Phase 2: DB 연동 시 활성화 예정
 # from app.api.v1.endpoints import user, shelters
 # from app.background.tasks import disaster_polling_task
@@ -88,6 +88,12 @@ app.include_router(
     admin.router,
     prefix="/api/v1/admin",
     tags=["Admin"]
+)
+
+app.include_router(
+    fcm.router,
+    prefix="/api/v1/fcm",
+    tags=["FCM"]
 )
 
 
