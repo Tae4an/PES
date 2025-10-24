@@ -6,6 +6,9 @@ import '../providers/location_provider.dart';
 import '../providers/disaster_provider.dart';
 import '../widgets/loading_skeleton.dart';
 import '../widgets/error_card.dart';
+import '../widgets/notification_overlay.dart';
+import '../../core/services/fcm_service.dart';
+import '../../core/network/dio_client.dart';
 
 /// 홈 화면
 class HomeScreen extends ConsumerWidget {
@@ -288,11 +291,115 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              
+              // FCM 테스트 섹션 (개발용)
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+              Text(
+                '🧪 FCM 알림 테스트',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _testLocalNotification(context),
+                      icon: const Icon(Icons.notifications),
+                      label: const Text('로컬 알림 테스트'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _testServerNotification(context),
+                      icon: const Icon(Icons.cloud),
+                      label: const Text('서버 알림 테스트'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// 로컬 알림 테스트 (앱 내 오버레이)
+  void _testLocalNotification(BuildContext context) {
+    NotificationService.showNotification(
+      title: '🚨 PES 테스트 알림',
+      body: '이것은 앱 내 알림 테스트입니다. 실제 재난 상황에서는 중요한 대피 정보가 표시됩니다.',
+      data: {
+        'type': 'test',
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('로컬 알림이 표시되었습니다!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 서버 FCM 알림 테스트
+  void _testServerNotification(BuildContext context) async {
+    try {
+      // FCM 서비스 초기화
+      final fcmService = FCMService(DioClient());
+      
+      // 임시 FCM 토큰 (실제로는 앱에서 생성된 토큰 사용)
+      const mockToken = 'test_fcm_token_for_simulator';
+      
+      // 서버에 테스트 알림 요청
+      final success = await fcmService.sendTestNotification(
+        TestNotificationRequest(
+          fcmToken: mockToken,
+          title: '🚨 PES 서버 테스트',
+          body: 'Firebase FCM을 통한 푸시 알림 테스트입니다!',
+        ),
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('서버 알림 전송 성공! (실제 기기에서 확인 가능)'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('서버 알림 전송 실패'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('오류: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }
 
