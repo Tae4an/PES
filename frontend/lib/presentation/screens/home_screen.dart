@@ -104,7 +104,7 @@ class HomeScreen extends ConsumerWidget {
 
               // 활성 재난 경보 섹션
               Text(
-                '🚨 활성 재난 경보',
+                '활성 재난 경보',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -241,7 +241,7 @@ class HomeScreen extends ConsumerWidget {
 
               // 빠른 액션 섹션
               Text(
-                '⚡️ 빠른 액션',
+                '빠른 액션',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -286,7 +286,7 @@ class HomeScreen extends ConsumerWidget {
               const Divider(),
               const SizedBox(height: 16),
               Text(
-                '🧪 FCM 알림 테스트',
+                'FCM 알림 테스트',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -373,7 +373,7 @@ class HomeScreen extends ConsumerWidget {
   /// 로컬 알림 테스트 (앱 내 오버레이)
   void _testLocalNotification(BuildContext context) {
     NotificationService.showNotification(
-      title: '🚨 PES 테스트 알림',
+      title: 'PES 테스트 알림',
       body: '이것은 앱 내 알림 테스트입니다. 실제 재난 상황에서는 중요한 대피 정보가 표시됩니다.',
       data: {
         'type': 'test',
@@ -402,7 +402,7 @@ class HomeScreen extends ConsumerWidget {
       final success = await fcmService.sendTestNotification(
         TestNotificationRequest(
           fcmToken: mockToken,
-          title: '🚨 PES 서버 테스트',
+          title: 'PES 서버 테스트',
           body: 'Firebase FCM을 통한 푸시 알림 테스트입니다!',
         ),
       );
@@ -458,12 +458,12 @@ class _QuickActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -471,17 +471,17 @@ class _QuickActionCard extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: color,
-                  size: 28,
+                  size: 24,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                 textAlign: TextAlign.center,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],

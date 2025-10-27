@@ -389,9 +389,9 @@ class NotificationsScreen extends ConsumerWidget {
   List<_NotificationItem> _getMockNotifications() {
     return [
       _NotificationItem(
-        id: '1',
-        type: 'disaster',
-        title: '🚨 호우 경보',
+      id: '1',
+      type: 'disaster',
+      title: '호우 경보',
         body: '제주시 지역에 호우 경보가 발령되었습니다. 저지대 및 하천 인근 지역은 침수에 주의하시기 바랍니다.',
         timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
         isRead: false,

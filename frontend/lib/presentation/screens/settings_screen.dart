@@ -56,7 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             // 개인 정보 섹션
             Text(
-              '👤 개인 정보',
+              '개인 정보',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -131,7 +131,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             // 알림 설정 섹션
             Text(
-              '🔔 알림 설정',
+              '알림 설정',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -178,7 +178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             // 정보 섹션
             Text(
-              'ℹ️ 정보',
+              '정보',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
