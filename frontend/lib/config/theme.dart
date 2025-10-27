@@ -12,11 +12,17 @@ class AppTheme {
       seedColor: AppColors.seedColor,
       brightness: Brightness.light,
       error: AppColors.critical,
+      // 더 깔끔한 색상 조합
+      primary: AppColors.seedColor,
+      secondary: const Color(0xFF4A90E2),
+      surface: Colors.white,
+      surfaceContainerHighest: const Color(0xFFF5F7FA),
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFFF5F7FA), // 부드러운 배경색
       
       // 타이포그래피
       textTheme: _buildTextTheme(colorScheme),
@@ -184,11 +190,17 @@ class AppTheme {
       seedColor: AppColors.seedColor,
       brightness: Brightness.dark,
       error: AppColors.critical,
+      // 다크 모드용 깔끔한 색상
+      primary: const Color(0xFF4A90E2),
+      secondary: const Color(0xFF6BA3E8),
+      surface: const Color(0xFF1E1E1E),
+      surfaceContainerHighest: const Color(0xFF2D2D2D),
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFF121212), // 다크 배경색
       
       textTheme: _buildTextTheme(colorScheme),
       

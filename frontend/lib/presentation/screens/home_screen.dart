@@ -7,6 +7,7 @@ import '../providers/disaster_provider.dart';
 import '../widgets/loading_skeleton.dart';
 import '../widgets/error_card.dart';
 import '../widgets/notification_overlay.dart';
+import '../widgets/main_layout.dart';
 import '../../core/services/fcm_service.dart';
 import '../../core/network/dio_client.dart';
 
@@ -19,22 +20,21 @@ class HomeScreen extends ConsumerWidget {
     final locationAsync = ref.watch(currentLocationProvider);
     final activeDisasterAsync = ref.watch(activeDisasterStreamProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('PES'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // 알림 목록 화면으로 이동 (TODO)
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
+    return MainLayout(
+      currentIndex: 0,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('PES'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.invalidate(currentLocationProvider);
+                ref.invalidate(activeDisasterStreamProvider);
+              },
+            ),
+          ],
+        ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(currentLocationProvider);
@@ -239,55 +239,44 @@ class HomeScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // 빠른 액션 버튼
-              Row(
+              // 빠른 액션 섹션
+              Text(
+                '⚡️ 빠른 액션',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              // 빠른 액션 그리드
+              GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
                 children: [
-                  Expanded(
-                    child: Card(
-                      child: InkWell(
-                        onTap: () => context.push('/map'),
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadiusMedium),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.map,
-                                size: 40,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(height: 8),
-                              const Text('지도'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                  _QuickActionCard(
+                    icon: Icons.shield_outlined,
+                    label: '행동카드',
+                    color: AppColors.critical,
+                    onTap: () => context.push('/action-card'),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Card(
-                      child: InkWell(
-                        onTap: () => context.push('/settings'),
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadiusMedium),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.settings,
-                                size: 40,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(height: 8),
-                              const Text('설정'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                  _QuickActionCard(
+                    icon: Icons.phone,
+                    label: '긴급전화',
+                    color: AppColors.warning,
+                    onTap: () => _showEmergencyContacts(context),
+                  ),
+                  _QuickActionCard(
+                    icon: Icons.favorite_outline,
+                    label: '안전수칙',
+                    color: AppColors.safe,
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('준비 중입니다')),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -333,6 +322,50 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    ),
+    );
+  }
+
+  /// 긴급 연락처 다이얼로그
+  static void _showEmergencyContacts(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.phone, color: AppColors.critical),
+            SizedBox(width: 8),
+            Text('긴급 연락처'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.local_hospital, color: AppColors.critical),
+              title: const Text('화재/응급'),
+              trailing: const Text('119', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              onTap: () {
+                // TODO: 전화 걸기 기능
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.local_police, color: Colors.blue),
+              title: const Text('범죄/재난'),
+              trailing: const Text('112', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              onTap: () {
+                // TODO: 전화 걸기 기능
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+        ],
       ),
     );
   }
@@ -400,6 +433,62 @@ class HomeScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+/// 빠른 액션 카드 위젯
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

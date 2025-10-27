@@ -5,6 +5,7 @@ import '../../config/constants.dart';
 import '../providers/location_provider.dart';
 import '../providers/shelter_provider.dart';
 import '../providers/disaster_provider.dart';
+import '../widgets/main_layout.dart';
 
 /// 지도 전체보기 화면
 class MapScreen extends ConsumerStatefulWidget {
@@ -24,27 +25,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final locationAsync = ref.watch(currentLocationProvider);
     final activeDisastersAsync = ref.watch(activeDisastersProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('지도'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: () {
-              locationAsync.whenData((location) {
-                if (location != null) {
-                  _mapController?.animateCamera(
-                    CameraUpdate.newLatLngZoom(
-                      LatLng(location.latitude, location.longitude),
-                      AppConstants.defaultZoom,
-                    ),
-                  );
-                }
-              });
-            },
-          ),
-        ],
-      ),
+    return MainLayout(
+      currentIndex: 1,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('지도'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.my_location),
+              onPressed: () {
+                locationAsync.whenData((location) {
+                  if (location != null) {
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLngZoom(
+                        LatLng(location.latitude, location.longitude),
+                        AppConstants.defaultZoom,
+                      ),
+                    );
+                  }
+                });
+              },
+            ),
+          ],
+        ),
       body: locationAsync.when(
         data: (location) {
           if (location == null) {
@@ -100,6 +103,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         error: (e, st) => Center(
           child: Text('오류: $e'),
         ),
+      ),
       ),
     );
   }

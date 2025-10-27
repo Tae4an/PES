@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/constants.dart';
 import '../../domain/entities/user_profile.dart';
 import '../providers/user_provider.dart';
-import '../widgets/custom_buttons.dart';
+import '../widgets/main_layout.dart';
 
 /// 설정 화면
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -43,10 +43,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('설정'),
-      ),
+    return MainLayout(
+      currentIndex: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('설정'),
+        ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.paddingLarge),
         child: Column(
@@ -228,21 +230,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 24),
 
             // 저장 버튼
-            PrimaryActionButton(
-              onPressed: _saveSettings,
-              label: '설정 저장',
-              icon: Icons.save,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _saveSettings,
+                icon: const Icon(Icons.save),
+                label: const Text('설정 저장'),
+              ),
             ),
-
-            const SizedBox(height: 12),
-
-            // 취소 버튼
-            const BackButtonCustom(label: '취소'),
 
             const SizedBox(height: 24),
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -265,7 +266,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.pop(context);
     }
   }
 }
