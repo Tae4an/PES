@@ -117,45 +117,130 @@ class LLMService:
         user_profile: Dict,
         shelters_text: str
     ) -> str:
-        """행동카드 생성 프롬프트 작성"""
+        """재난 행동카드 생성을 위한 강력한 프롬프트 작성"""
         
         current_time = datetime.now().strftime("%Y년 %m월 %d일 %H시 %M분")
         age_group = user_profile.get('age_group', '성인')
         mobility = user_profile.get('mobility', '정상')
+        height = user_profile.get('height', None)
         
-        # Instruction 태그를 사용하여 한글 응답 유도
         nearest_shelter = shelters_text.split('\n')[0] if shelters_text else '대피소 정보 없음'
         
-        prompt = f"""[INST]{disaster_type} 재난 발생. {location}에서 {age_group} 시민을 위한 즉시 대피 행동 지침을 3~5줄로 작성하세요.
+        # 키 정보가 있으면 프롬프트에 포함
+        height_info = f", 키: {height}" if height else ""
+        
+        prompt = f"""[INST]당신은 대한민국 행정안전부 소속 재난안전 전문가로서 국민의 생명을 보호하는 긴급 재난 행동 지침을 작성하는 임무를 수행하고 있습니다. 당신이 작성하는 행동 지침은 재난 상황에서 국민의 생명을 직접적으로 좌우하므로, 아래 규칙을 절대적으로 준수해야 하며 이를 위반할 경우 중대한 책임을 지게 됩니다.
 
-가장 가까운 대피소: {nearest_shelter}
+<재난 상황 정보>
+- 재난 유형: {disaster_type}
+- 발생 지역: {location}
+- 대상 시민: {age_group}{height_info}
+- 이동능력: {mobility}
+- 가장 가까운 대피소: {nearest_shelter}
+- 현재 시각: {current_time}
 
-한글로만 작성하고, 명령형으로 즉시 실행 가능한 행동만 포함하세요.[/INST]"""
+<필수 준수 규칙> : 이 규칙을 어길 시 국민의 생명에 직접적인 위험이 발생하며, 재난안전법 위반으로 법적 책임을 지게 됩니다.
+1. 행동 지침은 반드시 3~5줄로 구성할 것. 6줄 이상 또는 2줄 이하는 절대 불가.
+2. 모든 문장은 "~하세요", "~하십시오"로 작성할 것.
+3. 즉시 실행 가능한 구체적 행동만 포함할 것.
+4. 추측성 표현("아마", "~할 수도", "~것 같습니다", "~일 수 있습니다") 사용 시 즉시 실격.
+5. 불확실한 정보나 검증되지 않은 행동 지침은 절대 포함하지 말 것.
+6. **반드시 100% 순수 한글로만 작성할 것. 영어 단어는 단 한 글자도 사용 금지** (예: "inhalation" → "흡입", "avoid" → "피하다").
+7. 숫자는 허용됨 (예: "119", "10분").
+8. 불필요한 인사말, 서론, 결론, 부가 설명은 일체 제외하고 핵심 행동만 기술할 것.
+9. 대피소 정보가 제공된 경우 반드시 해당 대피소로의 이동 지침을 첫 번째 또는 두 번째 문장에 포함할 것.
+
+<행동 지침 작성 기준> : 우수한 재난 행동 지침의 기준입니다.
+1. 시간 순서대로 행동을 구성 (즉시 → 이동 중 → 대피 후).
+2. 생명 보호가 최우선 - 위험 회피 행동을 가장 먼저 제시.
+3. 구체적인 수치와 명확한 지시어 사용 (예: "10분 이내", "즉시", "절대").
+4. {age_group}과 {mobility} {height}를 고려한 맞춤형 지침 제공.
+
+
+<금지 사항> : 아래 표현이 포함될 경우 행동 지침은 즉시 무효 처리되며 중대한 법적 책임을 집니다.
+- **영어 단어 사용 절대 금지** (inhalation, avoid, emergency 등 - 모두 한글로 변환 필수)
+- "~하라"로 끝나는 문장
+- "추천합니다", "바랍니다", "생각됩니다", "예상됩니다"
+- "가능하면", "되도록", "최대한", "노력하세요"
+- "참고하세요", "알아두세요", "기억하세요"
+- 불필요한 이모지나 특수문자 (⚠️, ❗ 등)
+- 개인적 의견이나 경험담
+
+**중요**: 대한민국 국민에게 전달되는 재난 행동 지침입니다. 반드시 누구나 이해할 수 있는 순수 한글로만 작성하십시오. 영어나 외래어가 하나라도 포함되면 즉시 실격 처리됩니다.
+
+국민의 생명이 당신의 손에 달려있습니다. 위 규칙을 모두 준수하여 정확하고 명확한 재난 행동 지침을 순수 한글로만 작성하십시오.
+
+행동 지침:[/INST]"""
         
         return prompt
     
     def _validate_action_card(self, text: str) -> bool:
-        """생성된 행동카드 검증"""
+        """생성된 행동카드 엄격한 검증"""
         
-        # 금지 키워드 체크
-        forbidden_keywords = ["추측", "할 수도", "아마", "생각합니다", "가능성", "것 같"]
+        # 1. 영어 알파벳 체크 (숫자 제외)
+        import re
+        # 영어 알파벳만 찾기 (한글, 숫자, 특수문자 제외)
+        english_words = re.findall(r'[a-zA-Z]+', text)
+        if english_words:
+            logger.warning(f"❌ 영어 단어 감지: {english_words}")
+            return False
+        
+        # 2. 금지 키워드 체크 (확장)
+        forbidden_keywords = [
+            # 추측성 표현
+            "추측", "할 수도", "아마", "생각합니다", "가능성", "것 같", 
+            "예상됩니다", "보입니다", "~듯", "~듯합니다",
+            # 약한 권고 표현
+            "추천합니다", "바랍니다", "되도록", "가능하면", "최대한",
+            "참고하세요", "알아두세요", "기억하세요", "노력하세요",
+            # 불필요한 표현
+            "감사합니다", "안녕하세요", "여러분", "국민 여러분"
+        ]
         
         for keyword in forbidden_keywords:
             if keyword in text:
-                logger.warning(f"Forbidden keyword detected: {keyword}")
+                logger.warning(f"❌ 금지 키워드 감지: {keyword}")
                 return False
         
-        # 최소 글자 수 확인
+        # 3. 최소 글자 수 확인 (30자 이상)
         if len(text.strip()) < 30:
-            logger.warning("Action card too short")
+            logger.warning(f"❌ 행동카드가 너무 짧음: {len(text.strip())}자")
             return False
         
-        # 최대 줄 수 확인 (5줄 초과 금지)
-        lines = [l for l in text.split('\n') if l.strip()]
-        if len(lines) > 7:  # 제목 포함해서 7줄까지 허용
-            logger.warning(f"Action card too many lines: {len(lines)}")
+        # 4. 문장 수 확인 (3~7개 문장, 줄바꿈 무관)
+        # 마침표, 물음표, 느낌표로 문장 구분
+        import re
+        sentences = [s.strip() for s in re.split(r'[.!?。]', text) if s.strip()]
+        if len(sentences) < 3:
+            logger.warning(f"❌ 행동 지침 문장 수 부족: {len(sentences)}개 (최소 3개)")
+            return False
+        if len(sentences) > 7:
+            logger.warning(f"❌ 행동 지침 문장 수 초과: {len(sentences)}개 (최대 7개)")
             return False
         
+        # 5. 명령형 문장 확인 (하세요/하십시오/하라로 끝나는지)
+        command_endings = ["하세요", "하십시오", "하라", "하세요.", "하십시오.", "하라."]
+        has_command = False
+        for sentence in sentences:
+            for ending in command_endings:
+                if sentence.strip().endswith(ending):
+                    has_command = True
+                    break
+            if has_command:
+                break
+        
+        if not has_command:
+            logger.warning("❌ 명령형 문장이 포함되지 않음")
+            return False
+        
+        # 6. 이모지 및 특수문자 체크
+        emoji_chars = ["🚨", "⚠️", "❗", "✅", "🔥", "💧", "🌊", "⛰️"]
+        for emoji in emoji_chars:
+            if emoji in text:
+                logger.warning(f"❌ 불필요한 이모지 감지: {emoji}")
+                return False
+        
+        logger.info(f"✅ 행동카드 검증 통과: {len(sentences)}개 문장, {len(text.strip())}자")
         return True
     
     def _get_fallback_template(
@@ -199,6 +284,27 @@ class LLMService:
 - 대피소: {shelter_info} (도보 {walking_time}분)
 - 엘리베이터 금지, 계단 이용
 - 낮은 자세로 이동, 젖은 수건으로 코와 입 가리기""",
+            
+            "산불": f"""🚨 [산불 경보] 즉시 행동
+- 대피소: {shelter_info} (도보 {walking_time}분)
+- 산과 반대 방향으로 신속히 대피
+- 젖은 수건으로 코와 입 가리기
+- 연기 발생 시 낮은 자세 유지
+- 119 신고 후 안전 지대로 이동""",
+            
+            "대설": f"""🚨 [대설 경보] 즉시 행동
+- 실내 대피소: {shelter_info} (도보 {walking_time}분)
+- 외출 자제, 불가피 시 대중교통 이용
+- 빙판길 낙상 주의, 보폭 좁게 걷기
+- 차량 체인 장착, 안전거리 확보
+- 고립 대비 식수·식량 비축""",
+            
+            "강풍": f"""🚨 [강풍 경보] 즉시 행동
+- 실내 대피소: {shelter_info} (도보 {walking_time}분)
+- 간판, 가로수 등 낙하물 주의
+- 해안가 접근 절대 금지
+- 창문 닫고 유리창에서 멀어지기
+- 외출 자제, 차량 운행 주의""",
         }
         
         # 재난 유형에 맞는 템플릿 선택

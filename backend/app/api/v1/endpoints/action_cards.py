@@ -22,6 +22,7 @@ class ActionCardRequest(BaseModel):
     longitude: float
     age_group: str
     mobility: str
+    height: Optional[str] = None  # 키 정보 (예: "180cm", "165cm")
 
 # Action Card 응답 모델
 class ActionCardResponse(BaseModel):
@@ -74,7 +75,8 @@ async def generate_action_card(request: ActionCardRequest):
         # 3. 사용자 프로필
         user_profile = {
             "age_group": request.age_group,
-            "mobility": request.mobility
+            "mobility": request.mobility,
+            "height": request.height
         }
         logger.info(f"👤 사용자 프로필: {user_profile}")
         
