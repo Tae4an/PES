@@ -45,6 +45,23 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android Gradle 빌드 캐시 (절대 커밋하지 말 것!)
+/android/.gradle/
+/android/app/.gradle/
+/android/build/
+/android/app/build/
+/android/gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+
+# iOS 빌드 출력
+/ios/build/
+/ios/Pods/
+/ios/Runner.xcworkspace/xcuserdata/
+/ios/Runner.xcodeproj/xcuserdata/
+/ios/Flutter/flutter_export_environment.sh
+
 # Generated files
 *.g.dart
 *.freezed.dart
@@ -55,4 +72,11 @@ app.*.map.json
 .env.*
 !.env.example
 !env.example
+
+# Flutter 로그 파일
+flutter_*.log
+
+# 기타 임시 파일
+*.tmp
+*.temp
 

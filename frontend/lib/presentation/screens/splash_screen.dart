@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/constants.dart';
 
 /// 스플래시 화면
@@ -31,12 +32,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _controller.forward();
 
-    // 2초 후 다음 화면으로 이동
-    Future.delayed(const Duration(seconds: 2), () {
+    // 2초 후 onboarding 완료 여부 확인 후 이동
+    Future.delayed(const Duration(seconds: 2), () async {
+      if (mounted) {
+        await _navigateToNextScreen();
+      }
+    });
+  }
+
+  /// 다음 화면으로 이동 (onboarding 완료 여부 확인)
+  Future<void> _navigateToNextScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isOnboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+
+    if (isOnboardingCompleted) {
+      // 온보딩 완료 -> 홈으로 이동
+      if (mounted) {
+        context.go('/home');
+      }
+    } else {
+      // 온보딩 미완료 -> 온보딩 화면으로 이동
       if (mounted) {
         context.go('/onboarding');
       }
-    });
+    }
   }
 
   @override

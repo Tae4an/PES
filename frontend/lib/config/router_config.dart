@@ -5,6 +5,7 @@ import '../presentation/screens/onboarding_screen.dart';
 import '../presentation/screens/home_screen.dart';
 import '../presentation/screens/action_card_screen.dart';
 import '../presentation/screens/map_screen.dart';
+import '../presentation/screens/notifications_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 
 /// GoRouter 설정
@@ -46,6 +47,13 @@ class AppRouter {
         path: '/map',
         name: 'map',
         builder: (context, state) => const MapScreen(),
+      ),
+
+      // 알림 화면
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
 
       // 설정 화면
