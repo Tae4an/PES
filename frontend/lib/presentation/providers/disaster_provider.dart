@@ -21,13 +21,23 @@ final disasterRepositoryProvider = Provider<DisasterRepository>((ref) {
 /// 활성 재난 정보 Provider (목록 조회)
 final activeDisastersProvider = FutureProvider<List<Disaster>>((ref) async {
   final repository = ref.watch(disasterRepositoryProvider);
-  return await repository.getActiveDisasters();
+  try {
+    return await repository.getActiveDisasters();
+  } catch (e) {
+    // 네트워크 에러 시 빈 목록 반환 (개발용)
+    print('재난 정보 조회 실패 (Mock 데이터 사용): $e');
+    return <Disaster>[];
+  }
 });
 
 /// 활성 재난 정보 Provider (자동 새로고침 - 5초마다)
 final activeDisasterStreamProvider = StreamProvider<Disaster?>((ref) {
   final repository = ref.watch(disasterRepositoryProvider);
-  return repository.watchActiveDisaster();
+  return repository.watchActiveDisaster().handleError((error) {
+    // 네트워크 에러 시 null 반환 (개발용)
+    print('재난 스트림 에러 (Mock 데이터 사용): $error');
+    return null;
+  });
 });
 
 /// 위치 기반 재난 정보 Provider
