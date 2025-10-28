@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://pes_user:pes_password@localhost:5432/pes"
     
+    # 로컬 대피소 DB 설정 (선택적)
+    LOCAL_SHELTER_DB_HOST: Optional[str] = None
+    LOCAL_SHELTER_DB_PORT: Optional[str] = None
+    LOCAL_SHELTER_DB_NAME: Optional[str] = None
+    LOCAL_SHELTER_DB_USER: Optional[str] = None
+    LOCAL_SHELTER_DB_PASSWORD: Optional[str] = None
+    
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     REDIS_CACHE_TTL: int = 1800  # 30분
@@ -66,6 +73,36 @@ class Settings(BaseSettings):
         "credentials",
         "firebase-service-account.json"
     )
+    
+    @property
+    def use_local_shelter_db(self) -> bool:
+        """
+        로컬 대피소 DB 사용 여부 확인
+        5개 환경변수가 모두 설정되어 있으면 True
+        """
+        return all([
+            self.LOCAL_SHELTER_DB_HOST,
+            self.LOCAL_SHELTER_DB_PORT,
+            self.LOCAL_SHELTER_DB_NAME,
+            self.LOCAL_SHELTER_DB_USER,
+            self.LOCAL_SHELTER_DB_PASSWORD
+        ])
+    
+    @property
+    def local_shelter_db_url(self) -> str:
+        """
+        로컬 대피소 DB 연결 URL 생성
+        설정이 없으면 기본 DATABASE_URL 반환
+        """
+        if not self.use_local_shelter_db:
+            return self.DATABASE_URL
+        
+        return (
+            f"postgresql+asyncpg://"
+            f"{self.LOCAL_SHELTER_DB_USER}:{self.LOCAL_SHELTER_DB_PASSWORD}@"
+            f"{self.LOCAL_SHELTER_DB_HOST}:{self.LOCAL_SHELTER_DB_PORT}/"
+            f"{self.LOCAL_SHELTER_DB_NAME}"
+        )
     
     class Config:
         env_file = ".env"
