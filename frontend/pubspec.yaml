@@ -28,7 +28,7 @@ dependencies:
   
   # Firebase
   firebase_core: ^2.24.2
-  firebase_messaging: ^14.7.9
+  firebase_messaging: ^14.7.10
   
   # UI/UX
   google_fonts: ^6.1.0

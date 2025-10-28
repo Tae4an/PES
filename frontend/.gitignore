@@ -54,13 +54,18 @@ app.*.map.json
 /android/gradlew
 /android/gradlew.bat
 /android/local.properties
+android/local.properties
 
 # iOS 빌드 출력
 /ios/build/
 /ios/Pods/
 /ios/Runner.xcworkspace/xcuserdata/
 /ios/Runner.xcodeproj/xcuserdata/
+/ios/Runner.xcodeproj/project.pbxproj
+/ios/Podfile.lock
 /ios/Flutter/flutter_export_environment.sh
+ios/Podfile.lock
+ios/Runner.xcodeproj/project.pbxproj
 
 # Generated files
 *.g.dart

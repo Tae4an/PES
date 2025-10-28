@@ -28,14 +28,10 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks! :linkage => :static
+  use_frameworks!
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  
-  # Firebase SDK 명시적 지정
-  pod 'Firebase/Messaging', :modular_headers => true
-  pod 'Firebase/Core', :modular_headers => true
   
   target 'RunnerTests' do
     inherit! :search_paths
@@ -48,14 +44,46 @@ post_install do |installer|
     
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-      # Firebase 모듈화 헤더 설정
+      # Firebase 모듈화 헤더 설정 - 더 강력한 옵션
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      
+      # 추가 Swift/Clang 설정
+      config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+      config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      
+      # Umbrella header 문제 해결
+      config.build_settings['DEFINES_MODULE'] = 'YES'
+    end
+    
+    # firebase_messaging 타겟에 대한 특별 처리
+    if target.name == 'firebase_messaging'
+      target.build_configurations.each do |config|
+        # 모든 경고를 오류로 취급하지 않도록 설정
+        config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        config.build_settings['WARNING_CFLAGS'] ||= ['$(inherited)']
+        config.build_settings['WARNING_CFLAGS'] << '-Wno-error=non-modular-include-in-framework-module'
+        config.build_settings['OTHER_CFLAGS'] ||= ['$(inherited)']
+        config.build_settings['OTHER_CFLAGS'] << '-Wno-error=non-modular-include-in-framework-module'
+      end
     end
   end
   
   # Firebase 관련 프레임워크 모듈 맵 수정
   installer.pods_project.build_configurations.each do |config|
     config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+  end
+  
+  # Firebase 헤더 파일을 원래대로 복구 (혹시 수정되었다면)
+  pub_cache_path = File.expand_path('~/.pub-cache/hosted/pub.dev/firebase_messaging-14.7.10/ios/Classes/FLTFirebaseMessagingPlugin.h')
+  if File.exist?(pub_cache_path)
+    text = File.read(pub_cache_path)
+    if text.include?('@import Firebase;')
+      new_text = text.gsub('@import Firebase;', '#import <Firebase/Firebase.h>')
+      File.write(pub_cache_path, new_text)
+      puts "✅ Firebase header file restored"
+    end
   end
 end
