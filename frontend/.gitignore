@@ -61,11 +61,7 @@ android/local.properties
 /ios/Pods/
 /ios/Runner.xcworkspace/xcuserdata/
 /ios/Runner.xcodeproj/xcuserdata/
-/ios/Runner.xcodeproj/project.pbxproj
-/ios/Podfile.lock
 /ios/Flutter/flutter_export_environment.sh
-ios/Podfile.lock
-ios/Runner.xcodeproj/project.pbxproj
 
 # Generated files
 *.g.dart
@@ -84,4 +80,3 @@ flutter_*.log
 # 기타 임시 파일
 *.tmp
 *.temp
-
