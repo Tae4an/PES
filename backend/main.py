@@ -9,6 +9,7 @@ import logging
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.api.v1.endpoints import disasters, health, admin, action_cards, fcm
+from app.db.session import log_shelter_db_info
 # Phase 2: DB 연동 시 활성화 예정
 # from app.api.v1.endpoints import user, shelters
 # from app.background.tasks import disaster_polling_task
@@ -22,6 +23,9 @@ async def lifespan(app: FastAPI):
     """앱 생명주기 관리"""
     # 시작 시
     logger.info("Starting PES Backend...")
+    
+    # 대피소 DB 연결 정보 로깅 (추가)
+    log_shelter_db_info()
     
     # Phase 2: 백그라운드 재난 폴링 (DB 연동 시 활성화)
     # await disaster_polling_task.start()
