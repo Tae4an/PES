@@ -28,7 +28,7 @@ class LLMService:
     def _load_landmarks(self) -> List[Dict]:
         """랜드마크 정보 JSON 파일 로드"""
         try:
-            landmarks_file = Path(__file__).parent.parent / "metadata" / "landmarks_jeju.json"
+            landmarks_file = Path(__file__).parent.parent / "data" / "landmarks_jeju.json"
             with open(landmarks_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 return data.get('landmarks', [])
