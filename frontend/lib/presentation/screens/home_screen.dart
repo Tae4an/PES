@@ -309,145 +309,69 @@ class HomeScreen extends ConsumerWidget {
                     data: (disaster) => disaster != null
                         ? Card(
                             color: Theme.of(context).colorScheme.errorContainer,
-                            child: InkWell(
-                              onTap: () => context.push('/action-card'),
-                              borderRadius: BorderRadius.circular(
-                                  AppConstants.borderRadiusMedium),
-                              child: Padding(
-                                padding: const EdgeInsets.all(
-                                    AppConstants.paddingLarge),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          DisasterTypeConfig.getConfig(
-                                                  disaster.type)
-                                              .icon,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                          size: 32,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '${DisasterTypeConfig.getConfig(disaster.type).displayName} - ${disaster.type}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .error,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '발생지: ${disaster.location}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium,
-                                              ),
-                                              Text(
-                                                '심각도: ${disaster.severity}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Icon(Icons.chevron_right),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
-                                        borderRadius: BorderRadius.circular(
-                                            AppConstants.borderRadiusSmall),
+                            child: Padding(
+                              padding: const EdgeInsets.all(
+                                  AppConstants.paddingLarge),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        DisasterTypeConfig.getConfig(
+                                                disaster.type)
+                                            .icon,
+                                        color:
+                                            Theme.of(context).colorScheme.error,
+                                        size: 32,
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '나중에 llm연결',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: (Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.fontSize ??
-                                                          14) *
-                                                      1.5,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            '나중에 llm연결',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: (Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.fontSize ??
-                                                          14) *
-                                                      1.5,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            '나중에 llm연결',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: (Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.fontSize ??
-                                                          14) *
-                                                      1.5,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: FilledButton.icon(
-                                        onPressed: () =>
-                                            _showShelterMapDialog(context),
-                                        icon: const Icon(Icons.map),
-                                        label: const Text('대피소 안내'),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: AppColors.safe,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${DisasterTypeConfig.getConfig(disaster.type).displayName} - ${disaster.type}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '발생지: ${disaster.location}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ],
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // AI 행동 카드 미리보기
+                                  _ActionCardPreview(disasterId: disaster.id),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: () =>
+                                          _showShelterMapDialog(context),
+                                      icon: const Icon(Icons.map),
+                                      label: const Text('대피소 안내'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.safe,
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           )
@@ -870,3 +794,179 @@ class _TestScenarioButton extends StatelessWidget {
 }
 
 // (삭제됨) 빠른 액션 카드 위젯은 더 이상 사용하지 않습니다.
+
+/// 행동 카드 미리보기 위젯 (LLM 생성)
+class _ActionCardPreview extends ConsumerWidget {
+  final int disasterId;
+
+  const _ActionCardPreview({required this.disasterId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 현재 활성 재난 기반 행동 카드 가져오기
+    final actionCardAsync = ref.watch(currentActionCardProvider);
+
+    return actionCardAsync.when(
+      data: (actionCard) {
+        if (actionCard == null) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius:
+                  BorderRadius.circular(AppConstants.borderRadiusSmall),
+            ),
+            child: Text(
+              '행동 카드를 생성할 수 없습니다.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.grey,
+                  ),
+            ),
+          );
+        }
+
+        // 액션 카드 내용 표시 (상위 3개만)
+        final actionItems = actionCard.actionItems.take(3).toList();
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+            border: Border.all(
+              color: AppColors.safe.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 헤더
+              Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    color: AppColors.safe,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'AI 추천 행동 요령',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.safe,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // 행동 요령 목록
+              ...actionItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: AppColors.safe.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.safe,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              if (actionCard.actionItems.length > 3) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '+ ${actionCard.actionItems.length - 3}개 더보기',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.safe),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'AI가 행동 요령을 생성하는 중...',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.grey,
+                  ),
+            ),
+          ],
+        ),
+      ),
+      error: (error, stack) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: AppColors.critical, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '행동 카드 생성 실패: ${error.toString()}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.critical,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

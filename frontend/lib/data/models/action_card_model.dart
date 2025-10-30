@@ -44,8 +44,8 @@ class ActionCardModel {
       id: id,
       disaster: Disaster(
         id: disasterId,
-        type: '산불', // 기본값
-        location: '제주도', // 기본값
+        type: '재난', // 기본값
+        location: '경기도 안산시', // 안산시 기본값
         message: description,
         severity: priority,
         latitude: 37.2970, // 한양대 ERICA 캠퍼스 위도
