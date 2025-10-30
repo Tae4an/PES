@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/constants.dart';
 import '../providers/location_provider.dart';
 import '../providers/shelter_provider.dart';
@@ -193,6 +194,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       );
 
+      // 특정 위치 마커 - 길찾기 가능
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('custom_location'),
+          position: const LatLng(35.0, -120.0),
+          icon: BitmapDescriptor.defaultMarker, // 기본 빨간색 핀
+          infoWindow: const InfoWindow(
+            title: '지정된 위치',
+            snippet: '35.0, -120.0',
+          ),
+          onTap: () {
+            _showCustomLocationBottomSheet(
+              name: '지정된 위치',
+              address: '35.0, -120.0',
+              latitude: 35.0,
+              longitude: -120.0,
+            );
+          },
+        ),
+      );
+
       // 대피소 마커
       for (int i = 0; i < shelters.length; i++) {
         final shelter = shelters[i];
@@ -276,7 +298,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
-                  // 네비게이션 실행
+                  _startNavigation(shelter.latitude, shelter.longitude);
                 },
                 icon: const Icon(Icons.navigation),
                 label: const Text('네비게이션 시작'),
@@ -286,6 +308,132 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ),
     );
+  }
+
+  /// 커스텀 위치 바텀시트 (특정 장소용)
+  void _showCustomLocationBottomSheet({
+    required String name,
+    required String address,
+    required double latitude,
+    required double longitude,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppConstants.paddingLarge),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.place,
+                    color: Colors.purple,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        address,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _InfoItem(
+                  icon: Icons.public,
+                  label: '특정 장소',
+                ),
+                _InfoItem(
+                  icon: Icons.star,
+                  label: '저장된 위치',
+                ),
+                _InfoItem(
+                  icon: Icons.location_on,
+                  label:
+                      '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _startNavigation(latitude, longitude);
+                },
+                icon: const Icon(Icons.navigation),
+                label: const Text('길찾기 시작'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 길찾기 시작 (구글맵 또는 외부 네비게이션 앱 실행)
+  Future<void> _startNavigation(double latitude, double longitude) async {
+    // 현재 위치 가져오기
+    final currentLocation = await ref.read(currentLocationProvider.future);
+
+    if (currentLocation == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('현재 위치를 가져올 수 없습니다')),
+        );
+      }
+      return;
+    }
+
+    // 구글맵 길찾기 URL (directions)
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+      '&origin=${currentLocation.latitude},${currentLocation.longitude}'
+      '&destination=$latitude,$longitude'
+      '&travelmode=walking', // walking, driving, transit, bicycling
+    );
+
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('길찾기 실행 실패: $e')),
+        );
+      }
+    }
   }
 
   /// 위치 새로고침 및 카메라 중앙 이동
