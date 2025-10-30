@@ -68,6 +68,11 @@ class AppColors {
   static const Color warning = Color(0xFFFB8C00); // 주의
   static const Color caution = Color(0xFFF39C12); // 조심
   static const Color safe = Color(0xFF27AE60); // 안전
+  
+  // UI 강조 색상 (빨강 계열 통일)
+  static const Color danger = Color(0xFFDC3545); // 세련된 레드
+  static const Color dangerLight = Color(0xFFFF6B7A); // 밝은 레드
+  static const Color dangerDark = Color(0xFFC82333); // 진한 레드
 
   // 추가 색상
   static const Color white = Color(0xFFFFFFFF);
