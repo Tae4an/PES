@@ -31,6 +31,7 @@ class TrainingUserState {
   TrainingUserState copyWith({
     String? userId,
     String? deviceId,
+    String? username,
     String? nickname,
     String? ageGroup,
     String? mobility,
@@ -60,6 +61,83 @@ class TrainingUserProvider extends ChangeNotifier {
 
   TrainingUserState get state => _state;
 
+  /// ID/PW 로그인
+  Future<void> login(String username, String password) async {
+    try {
+      _state = _state.copyWith(isLoading: true, error: null);
+      notifyListeners();
+
+      final response = await _apiService.login(
+        username: username,
+        password: password,
+      );
+
+      AppLogger.i('로그인 API 응답: $response');
+
+      // SharedPreferences에 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', response['user_id']);
+      await prefs.setString('username', response['username']);
+
+      _state = TrainingUserState(
+        userId: response['user_id'],
+        deviceId: response['username'], // username을 deviceId처럼 사용
+        nickname: response['nickname'] ?? '익명',
+        ageGroup: response['age_group'],
+        mobility: response['mobility'] ?? '정상',
+        totalPoints: response['total_points'] ?? 0,
+        isNewUser: false,
+        isLoading: false,
+      );
+
+      AppLogger.i('로그인 성공 - userId: ${_state.userId}, username: $username');
+      notifyListeners();
+    } catch (e) {
+      AppLogger.e('로그인 실패: $e');
+      _state = _state.copyWith(
+        isLoading: false,
+        error: '로그인 실패: $e',
+      );
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// 자동 로그인 체크
+  Future<bool> checkAutoLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+      final username = prefs.getString('username');
+
+      if (userId != null && username != null) {
+        _state = _state.copyWith(
+          userId: userId,
+          deviceId: username,
+        );
+        AppLogger.i('자동 로그인 - userId: $userId, username: $username');
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      AppLogger.e('자동 로그인 체크 실패: $e');
+      return false;
+    }
+  }
+
+  /// 로그아웃
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_id');
+    await prefs.remove('username');
+    await prefs.remove('device_id');
+    
+    _state = TrainingUserState();
+    notifyListeners();
+    AppLogger.i('로그아웃 완료');
+  }
+
   /// 자동 로그인/회원가입
   Future<void> registerOrLogin({String? fcmToken}) async {
     try {
@@ -75,6 +153,8 @@ class TrainingUserProvider extends ChangeNotifier {
         deviceId: deviceId,
         fcmToken: fcmToken,
       );
+      
+      AppLogger.i('로그인 API 응답: $response');
 
       // 3. 상태 업데이트
       _state = TrainingUserState(
@@ -87,6 +167,8 @@ class TrainingUserProvider extends ChangeNotifier {
         isNewUser: response['is_new_user'] ?? false,
         isLoading: false,
       );
+      
+      AppLogger.i('Provider 상태 업데이트 완료 - userId: ${_state.userId}, deviceId: ${_state.deviceId}');
 
       // 4. SharedPreferences에 저장
       final prefs = await SharedPreferences.getInstance();

@@ -138,7 +138,7 @@ class _RewardsScreenState extends State<RewardsScreen>
           padding: const EdgeInsets.all(16),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.7, // 0.75 -> 0.7로 변경 (카드 높이 증가)
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
@@ -165,7 +165,7 @@ class _RewardsScreenState extends State<RewardsScreen>
           children: [
             // 아이콘 영역
             Container(
-              height: 120,
+              height: 110, // 120 -> 110으로 줄임
               width: double.infinity,
               color: Colors.grey.shade100,
               child: Center(
@@ -176,7 +176,7 @@ class _RewardsScreenState extends State<RewardsScreen>
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(10.0), // 12 -> 10으로 줄임
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

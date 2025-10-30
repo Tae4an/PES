@@ -14,7 +14,9 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(String(255), unique=True, nullable=False, index=True)
+    device_id = Column(String(255), unique=True, nullable=True, index=True)
+    username = Column(String(50), unique=True, nullable=True, index=True)
+    password = Column(String(255), nullable=True)
     fcm_token = Column(String(512), nullable=True)
     
     # 사용자 프로필 (비식별)

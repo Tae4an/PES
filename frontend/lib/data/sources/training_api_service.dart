@@ -9,6 +9,21 @@ class TrainingApiService {
 
   // ===== User API =====
   
+  /// ID/PW 로그인
+  Future<Map<String, dynamic>> login({
+    required String username,
+    required String password,
+  }) async {
+    final response = await _dio.post(
+      '/api/v1/users/login',
+      data: {
+        'username': username,
+        'password': password,
+      },
+    );
+    return response.data;
+  }
+
   /// 회원가입 또는 로그인 (자동)
   Future<Map<String, dynamic>> registerOrLogin({
     required String deviceId,

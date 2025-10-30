@@ -7,7 +7,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 사용자 테이블
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    device_id VARCHAR(255) UNIQUE NOT NULL,
+    device_id VARCHAR(255) UNIQUE,
+    username VARCHAR(50) UNIQUE,
+    password VARCHAR(255),
     fcm_token VARCHAR(512),
     nickname VARCHAR(50) DEFAULT '익명',
     age_group VARCHAR(50),
@@ -19,6 +21,13 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- 테스트 사용자 데이터 삽입
+INSERT INTO users (username, password, nickname, age_group, mobility) VALUES
+('test1', '1234', '테스터1', '20대', '정상'),
+('test2', '1234', '테스터2', '30대', '정상'),
+('admin', 'admin', '관리자', '30대', '정상')
+ON CONFLICT (username) DO NOTHING;
 
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id);
