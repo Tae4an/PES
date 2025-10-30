@@ -182,8 +182,58 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   flex: 40,
                   child: Container(
                     color: Theme.of(context).scaffoldBackgroundColor,
-                    child: const Center(
-                      child: Text('대피소 목록이 여기 표시됩니다'),
+                    child: sheltersAsync.when(
+                      data: (shelters) {
+                        if (shelters.isEmpty) {
+                          return const Center(
+                            child: Text('주변에 대피소가 없습니다'),
+                          );
+                        }
+
+                        // 거리순으로 정렬된 대피소 목록 (최대 5개)
+                        final sortedShelters = List.from(shelters)
+                          ..sort((a, b) => (a.distanceKm ?? double.infinity)
+                              .compareTo(b.distanceKm ?? double.infinity));
+                        final topShelters = sortedShelters.take(5).toList();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                '가까운 대피소',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: topShelters.length,
+                                itemBuilder: (context, index) {
+                                  final shelter = topShelters[index];
+                                  return _ShelterListItem(
+                                    shelter: shelter,
+                                    rank: index + 1,
+                                    onTap: () =>
+                                        _showShelterBottomSheet(shelter),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (e, st) => Center(
+                        child: Text('대피소 정보를 불러올 수 없습니다\n$e'),
+                      ),
                     ),
                   ),
                 ),
@@ -565,6 +615,124 @@ class _InfoItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
+    );
+  }
+}
+
+/// 대피소 목록 아이템
+class _ShelterListItem extends StatelessWidget {
+  final shelter;
+  final int rank;
+  final VoidCallback onTap;
+
+  const _ShelterListItem({
+    required this.shelter,
+    required this.rank,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final distanceKm = shelter.distanceKm ?? 0.0;
+    final walkingMinutes = shelter.walkingMinutes ?? 0;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // 순위 표시
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: rank <= 3
+                      ? AppColors.safe.withOpacity(0.1)
+                      : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    '$rank',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: rank <= 3 ? AppColors.safe : Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 대피소 정보
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      shelter.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      shelter.type,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              // 거리 및 시간 정보
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.near_me,
+                        size: 14,
+                        color: AppColors.safe,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${distanceKm.toStringAsFixed(2)}km',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.safe,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.directions_walk,
+                        size: 14,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '도보 ${walkingMinutes}분',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
