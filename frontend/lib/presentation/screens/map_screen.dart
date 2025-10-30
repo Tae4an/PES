@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../config/constants.dart';
 import '../providers/location_provider.dart';
 import '../providers/shelter_provider.dart';
@@ -21,6 +22,44 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   final Set<Marker> _markers = {};
   final Set<Circle> _circles = {};
   bool _markersInitialized = false;
+  String _currentAddress = '주소를 불러오는 중...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddress();
+  }
+
+  Future<void> _loadAddress() async {
+    try {
+      // 한양대 ERICA 고정 좌표
+      final placemarks = await placemarkFromCoordinates(
+        37.295692,
+        126.841425,
+        localeIdentifier: 'ko_KR',
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        setState(() {
+          // 한국 주소 형식: 시/도 구/군 동 상세주소
+          _currentAddress = '${place.administrativeArea ?? ''} '
+                  '${place.locality ?? ''} '
+                  '${place.subLocality ?? ''}'
+              .trim();
+
+          // 만약 주소가 비어있으면 기본값
+          if (_currentAddress.isEmpty) {
+            _currentAddress = '경기도 안산시 상록구 사동';
+          }
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _currentAddress = '경기도 안산시 상록구 사동';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,26 +135,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.location_on, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              '현재 위치',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            const Icon(Icons.location_on,
+                                size: 20, color: AppColors.safe),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _currentAddress,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '마지막 업데이트: 방금 전',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.grey,
-                                  ),
                         ),
                       ],
                     ),
