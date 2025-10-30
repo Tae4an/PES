@@ -36,6 +36,44 @@ class LLMService:
             logger.warning(f"랜드마크 파일 로드 실패: {e}")
             return []
     
+    def _load_user_health_data(self, user_id: str) -> Dict:
+        """사용자 건강 정보 JSON 파일 로드"""
+        try:
+            health_file = Path(__file__).parent.parent / "metadata" / "user_health_data.json"
+            with open(health_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                users = data.get('users', [])
+                for user in users:
+                    if user.get('user_id') == user_id:
+                        return user
+                return {}
+        except Exception as e:
+            logger.warning(f"건강 데이터 파일 로드 실패: {e}")
+            return {}
+    
+    def _get_health_specific_advice(self, condition: str, medications: List[str], disaster_type: str) -> str:
+        """질환별 재난 상황 맞춤형 약물/장비 권고사항 생성"""
+        
+        # 질환별 필수 챙겨야 할 것들
+        health_advice_map = {
+            "고혈압": "혈압약과 혈압계를 꼭 챙기",
+            "당뇨병": "인슐린과 혈당측정기를 꼭 챙기",
+            "천식": "흡입기(네뷸라이저)를 꼭 챙기",
+            "간질": "항경련제를 꼭 챙기",
+            "심장병": "니트로글리세린과 심장약을 꼭 챙기",
+            "파킨슨병": "파킨슨병 약과 보행보조기를 꼭 챙기"
+        }
+        
+        advice_template = health_advice_map.get(condition)
+        if advice_template:
+            return advice_template
+        
+        # 기본 권고사항 (질환이 매핑에 없는 경우)
+        if medications:
+            return f"필수 약물({medications[0]})을 꼭 챙기십시오"
+        
+        return ""
+    
     async def generate_action_card(
         self,
         disaster_type: str,
@@ -109,6 +147,17 @@ class LLMService:
                         action_card = result.get('thinking', '').strip()
                         logger.info(f"Using thinking field as response is empty")
                     
+                    # 번호 매기기 제거 (예: "1. ", "2. " 제거 - 각 줄마다)
+                    import re
+                    lines = action_card.split('\n')
+                    cleaned_lines = []
+                    for line in lines:
+                        # 각 줄의 시작 부분에서 번호 제거
+                        cleaned_line = re.sub(r'^\s*[\d①②③④⑤⑥⑦⑧⑨⑩]+[\.\)]\s*', '', line)
+                        if cleaned_line.strip():
+                            cleaned_lines.append(cleaned_line)
+                    action_card = '\n'.join(cleaned_lines)
+                    
                     # 검증
                     is_valid = self._validate_action_card(action_card)
                     logger.info(f"🔍 Validation result: {is_valid}, length={len(action_card)}, lines={len([l for l in action_card.split(chr(10)) if l.strip()])}")
@@ -160,44 +209,7 @@ class LLMService:
         logger.error(error_msg)
         raise RuntimeError(error_msg)
     
-    def _get_disaster_specific_rules(self, disaster_type: str) -> str:
-        """재난 유형별 특화 규칙 반환"""
-        
-        disaster_rules = {
-            "지진": """
-<지진 특화 행동 지침 규칙>
-1. 첫 번째 문장: 즉시 책상/테이블 아래로 몸을 숨기라는 지시 (Drop, Cover, Hold on)
-2. 두 번째 문장: 흔들림이 멈춘 후 지진대피소로 이동하라는 지시 (내진 설계 건물 강조)
-3. 엘리베이터 절대 사용 금지 명시
-4. 낙하물 주의 및 건물 외벽에서 멀어지기 강조
-5. 여진 가능성 경고 포함""",
-            
-            "해일": """
-<해일 특화 행동 지침 규칙>
-1. 첫 번째 문장: 즉시 고지대/해일대피소로 수직 대피 지시 (1분 1초가 생명)
-2. 해안가에서 최대한 멀어지기 강조
-3. 차량보다 도보 대피가 더 빠를 수 있음 안내
-4. 1차 해일 후 2차, 3차 해일 올 수 있음 경고
-5. 해발 높은 곳에 위치한 대피소 특성 강조""",
-            
-            "산불": """
-<산불 특화 행동 지침 규칙>
-1. 첫 번째 문장: 산과 반대 방향으로 즉시 대피 지시
-2. 산불대피소(개활지, 비산림 지역)로 신속히 이동
-3. 바람 방향을 고려한 대피 경로 선택 강조
-4. 젖은 수건/마스크로 호흡기 보호 필수
-5. 연기 발생 시 낮은 자세 유지 및 시야 확보""",
-            
-            "전쟁": """
-<전쟁 특화 행동 지침 규칙>
-1. 첫 번째 문장: 즉시 지하 대피소/전쟁대피소로 이동 지시
-2. 창문과 외벽에서 멀어지기 강조
-3. 방호 시설(지하, 콘크리트 건물)의 중요성 명시
-4. 정부 및 관계 기관의 지시 대기
-5. 비상식량과 식수 확보 안내"""
-        }
-        
-        return disaster_rules.get(disaster_type, "")
+   
     
     def _create_prompt(
         self,
@@ -221,158 +233,80 @@ class LLMService:
             for i, lm in enumerate(self.landmarks_data)
         ]) if self.landmarks_data else "  정보 없음"
         
-        # 재난 유형별 특화 규칙
-        disaster_specific_rules = self._get_disaster_specific_rules(disaster_type)
+
         
-        # 키 정보가 있으면 프롬프트에 포함
-        height_info = f", 키: {height}" if height else ""
         
-        prompt = f"""[INST]당신은 대한민국 행정안전부 소속 재난안전 전문가로서 국민의 생명을 보호하는 긴급 재난 행동 지침을 작성하는 임무를 수행하고 있습니다. 
+        # 랜드마크 이름만 추출 (첫 번째 랜드마크 사용)
+        landmark_name = self.landmarks_data[0]['name'] if self.landmarks_data else "주요 랜드마크"
         
-⚠️ 경고: 번호 매기기(1. 2. 3.)를 사용하면 즉시 실격됩니다. 문장은 번호 없이 바로 시작하십시오.
-⚠️ 경고: 3~5개 문장만 작성하십시오. 6개 이상 작성 시 즉시 실격됩니다.
+        # 대피소 이름과 거리 추출
+        shelter_parts = nearest_shelter.split(' - ')
+        shelter_name = shelter_parts[0].strip() if shelter_parts else "대피소"
+        
+        # 거리 추출 (예: "거리: 3.5km" 형식에서)
+        distance = "0km"
+        if len(shelter_parts) > 1:
+            distance_part = shelter_parts[1]
+            if '거리:' in distance_part:
+                distance = distance_part.split('거리:')[1].split(',')[0].strip()
+        
+        # 사용자 건강 정보 로드 (user_profile에 user_id가 있는 경우)
+        user_id = user_profile.get('user_id', None)
+        health_precaution = ""
+        has_health_info = False
+        
+        if user_id:
+            health_data = self._load_user_health_data(user_id)
+            if health_data and health_data.get('health_conditions'):
+                # 가장 심각한 건강 상태의 약물/장비 정보 추출
+                conditions = health_data.get('health_conditions', [])
+                if conditions:
+                    primary_condition = conditions[0]  # 첫 번째 질환
+                    condition_name = primary_condition.get('condition', '')
+                    medications = primary_condition.get('medication', [])
+                    
+                    # 재난 상황별 필수 약물/장비 권고사항 생성
+                    if medications:
+                        # 질환별 맞춤형 장비/약물 권고
+                        disaster_specific_advice = self._get_health_specific_advice(
+                            condition_name, medications, disaster_type
+                        )
+                        if disaster_specific_advice:
+                            health_precaution = disaster_specific_advice
+                            has_health_info = True
+        
+        # 건강 정보 유무에 따라 프롬프트 다르게 생성
+        if has_health_info:
+            prompt = f"""[INST]정확히 아래 2개 문장만 작성:
 
-<재난 상황 정보>
-- 재난 유형: {disaster_type}
-- 발생 지역: {location}
-- 대상 시민: {age_group}{height_info}
-- 이동능력: {mobility}
-- 가장 가까운 대피소: {nearest_shelter}
-- 주변 랜드마크 정보:{landmarks_text}
-- 현재 시각: {current_time}
+첫 번째 문장: {shelter_name}({landmark_name} 방향)로 {distance} 이동하십시오.
+두 번째 문장: {health_precaution}십시오.
 
-<필수 준수 규칙> : 이 규칙을 어길 시 국민의 생명에 직접적인 위험이 발생하며, 재난안전법 위반으로 법적 책임을 지게 됩니다.
-1. **[절대 엄수]** 행동 지침은 정확히 3개, 4개, 또는 5개 문장만 작성. 6개 이상 작성 시 즉시 실격. 각 문장은 마침표(.)로 끝나야 함.
-2. **[절대 금지]** 번호 매기기(1. 2. 3.) 사용 금지. 문장은 번호 없이 바로 시작할 것.
-3. 모든 문장은 "~하세요", "~하십시오"로 작성할 것.
-4. 즉시 실행 가능한 구체적 행동만 포함할 것.
-5. 추측성 표현("아마", "~할 수도", "~것 같습니다", "~일 수 있습니다") 사용 시 즉시 실격.
-6. 불확실한 정보나 검증되지 않은 행동 지침은 절대 포함하지 말 것.
-7. 대피소 정보에 포함된 정확한 거리(km 또는 m)와 도보 시간을 반드시 명시할 것
-8. 숫자는 허용됨 (예: "119", "10분").
-9. 불필요한 인사말, 서론, 결론, 부가 설명은 일체 제외하고 핵심 행동만 기술할 것.
-10. 대피소 정보가 제공된 경우 반드시 해당 대피소로의 이동 지침을 첫 번째 또는 두 번째 문장에 포함할 것.
-11. 방향 안내 시 "북쪽", "남쪽", "동쪽", "서쪽" 같은 추상적 표현 대신 주변 랜드마크를 활용할 것 (예: "안산 스타디움 방향으로", "롯데마트 상록점 쪽으로").
+다른 문장 추가 금지. 위 2개 문장만 작성:[/INST]"""
+        else:
+            prompt = f"""[INST]정확히 이 문장만 작성:
 
-<행동 지침 작성 기준> : 우수한 재난 행동 지침의 기준입니다.
-1. 시간 순서대로 행동을 구성 (즉시 → 이동 중 → 대피 후).
-2. 생명 보호가 최우선 - 위험 회피 행동을 가장 먼저 제시.
-3. 구체적인 수치와 명확한 지시어 사용 (예: "10분 이내", "즉시", "절대").
-4. 개인화된 정보인 {age_group}과 {mobility} {height}를 고려한 맞춤형 지침 제공.
-5. 대피소 정보에 포함된 정확한 거리(km 또는 m)와 도보 시간을 반드시 명시할 것.
-6. {nearest_shelter}로 이동하라는 정보를 첫 번째 또는 두 번째 문장에 꼭 포함할 것.
-7. 모든 행동 지침 문장은 줄바꿈 문장으로 작성할 것.
-8. {landmarks_text} 정보를 활용하여 구체적인 이동 경로를 안내할 것.
+{shelter_name}({landmark_name} 방향)로 {distance} 이동하십시오.
 
-{disaster_specific_rules}
-
-
-<금지 사항> : 아래 표현이 포함될 경우 행동 지침은 즉시 무효 처리되며 중대한 법적 책임을 집니다.
-- **번호 매기기 절대 금지** (1. 2. 3. 또는 ①②③ 형식 등 모든 번호 표시)
-- "~하라"로 끝나는 문장
-- "추천합니다", "바랍니다", "생각됩니다", "예상됩니다"
--  "노력하세요"
-- "참고하세요", "알아두세요", "기억하세요"
-- 불필요한 이모지나 특수문자 (⚠️, ❗ 등)
-- 개인적 의견이나 경험담
-
-**중요**: 대한민국 국민에게 전달되는 재난 행동 지침입니다. 반드시 누구나 이해할 수 있는 순수 한글로만 작성하십시오. 
-**예외**: 측정 단위(km, m, cm 등)와 숫자(119 등)는 허용됩니다. 그 외 영어나 외래어는 즉시 실격 처리됩니다.
-
-<올바른 행동 지침 예시 - 번호 없이 4개 문장>
-즉시 건물 내부로 대피하십시오.
-창문과 출입문을 모두 닫고 외부 공기 유입을 차단하십시오.
-{nearest_shelter}로 이동하여 안전을 확보하십시오.
-대피 완료 후 119에 신고하여 추가 지시를 받으십시오.
-
-❌ 잘못된 예시 (번호 사용 금지):
-1. 즉시 대피하십시오.
-2. 119에 신고하십시오.
-
-국민의 생명이 당신의 손에 달려있습니다. 반드시 번호 없이 3~5개 문장만 작성하십시오.
-
-행동 지침:[/INST]"""
+다른 문장 추가 금지. 위 문장만 그대로 작성:[/INST]"""
         
         return prompt
     
     def _validate_action_card(self, text: str) -> bool:
-        """생성된 행동카드 엄격한 검증"""
-        
-        # 1. 영어 알파벳 체크 (측정 단위 제외)
+        """생성된 행동카드 간단한 검증"""
         import re
-        # 영어 알파벳만 찾기 (한글, 숫자, 특수문자 제외)
-        english_words = re.findall(r'[a-zA-Z]+', text)
-        # 허용된 측정 단위 제외
-        allowed_units = ['km', 'KM', 'm', 'M', 'cm', 'CM', 'mm', 'MM', 'kg', 'KG', 'g', 'G']
-        filtered_english = [word for word in english_words if word not in allowed_units]
-        if filtered_english:
-            logger.warning(f"❌ 영어 단어 감지: {filtered_english}")
+        
+        # 1. 문장 수 확인 (1개 또는 2개 문장)
+        # 소수점은 문장 구분자에서 제외 (예: 32.76km은 하나의 단어)
+        # 문장 끝의 마침표, 물음표, 느낌표만 문장 구분자로 인식
+        sentences = [s.strip() for s in re.split(r'(?<!\d)[.!?。](?!\d)', text) if s.strip()]
+        if len(sentences) < 1 or len(sentences) > 2:
+            logger.warning(f"❌ 행동 지침 문장 수: {len(sentences)}개 (1~2개 필요)")
             return False
-        
-        # 2. 번호 매기기 체크 (절대 금지)
-        # 문장 시작 부분에 "1.", "2.", "①", "②" 등의 번호가 있는지 확인
-        numbered_pattern = re.compile(r'^\s*[\d①②③④⑤⑥⑦⑧⑨⑩]+[\.\)]\s*', re.MULTILINE)
-        if numbered_pattern.search(text):
-            logger.warning(f"❌ 번호 매기기 감지 (금지됨)")
-            return False
-        
-        # 3. 금지 키워드 체크 (확장)
-        forbidden_keywords = [
-            # 추측성 표현
-            "추측", "할 수도", "아마", "생각합니다", "가능성", "것 같", 
-            "예상됩니다", "보입니다", "~듯", "~듯합니다",
-            # 약한 권고 표현
-            "추천합니다", "바랍니다", "되도록", "가능하면", "최대한",
-            "참고하세요", "알아두세요", "기억하세요", "노력하세요",
-            # 불필요한 표현
-            "감사합니다", "안녕하세요", "여러분", "국민 여러분"
-        ]
-        
-        for keyword in forbidden_keywords:
-            if keyword in text:
-                logger.warning(f"❌ 금지 키워드 감지: {keyword}")
-                return False
-        
-        # 4. 최소 글자 수 확인 (30자 이상)
-        if len(text.strip()) < 30:
-            logger.warning(f"❌ 행동카드가 너무 짧음: {len(text.strip())}자")
-            return False
-        
-        # 5. 문장 수 확인 (3~5개 문장, 줄바꿈 무관)
-        # 마침표, 물음표, 느낌표로 문장 구분
-        import re
-        sentences = [s.strip() for s in re.split(r'[.!?。]', text) if s.strip()]
-        if len(sentences) < 3:
-            logger.warning(f"❌ 행동 지침 문장 수 부족: {len(sentences)}개 (최소 3개 필요)")
-            return False
-        if len(sentences) > 5:
-            logger.warning(f"❌ 행동 지침 문장 수 초과: {len(sentences)}개 (최대 5개)")
-            return False
-        
-        # 6. 명령형 문장 확인 (하세요/하십시오/하라로 끝나는지)
-        command_endings = ["하세요", "하십시오", "하라", "하세요.", "하십시오.", "하라."]
-        has_command = False
-        for sentence in sentences:
-            for ending in command_endings:
-                if sentence.strip().endswith(ending):
-                    has_command = True
-                    break
-            if has_command:
-                break
-        
-        if not has_command:
-            logger.warning("❌ 명령형 문장이 포함되지 않음")
-            return False
-        
-        # 7. 이모지 및 특수문자 체크
-        emoji_chars = ["🚨", "⚠️", "❗", "✅", "🔥", "💧", "🌊", "⛰️"]
-        for emoji in emoji_chars:
-            if emoji in text:
-                logger.warning(f"❌ 불필요한 이모지 감지: {emoji}")
-                return False
         
         logger.info(f"✅ 행동카드 검증 통과: {len(sentences)}개 문장, {len(text.strip())}자")
         return True
+        
     
     def _get_fallback_template(
         self,

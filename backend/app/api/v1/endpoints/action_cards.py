@@ -24,6 +24,7 @@ class ActionCardRequest(BaseModel):
     age_group: str
     mobility: str
     height: Optional[str] = None  # 키 정보 (예: "180cm", "165cm")
+    user_id: Optional[str] = None  # 사용자 ID (건강 정보 조회용)
 
 # Action Card 응답 모델
 class ActionCardResponse(BaseModel):
@@ -77,7 +78,8 @@ async def generate_action_card(request: ActionCardRequest):
         user_profile = {
             "age_group": request.age_group,
             "mobility": request.mobility,
-            "height": request.height
+            "height": request.height,
+            "user_id": request.user_id
         }
         logger.info(f"👤 사용자 프로필: {user_profile}")
         
@@ -320,8 +322,11 @@ def _build_action_card_response(
     # Action Card ID 생성
     card_id = f"card_{request.disaster_id}_{int(request.latitude * 1000)}_{int(request.longitude * 1000)}_{generation_method}"
     
-    # 행동 단계 추출 (각 줄을 단계로)
-    steps = [line.strip() for line in action_text.split('\n') if line.strip() and not line.startswith('🚨')]
+    # 행동 단계 추출 (문장 단위로)
+    import re
+    # 마침표, 물음표, 느낌표로 문장 구분 (소수점 제외)
+    sentences = re.split(r'(?<!\d)[.!?。](?!\d)', action_text)
+    steps = [s.strip() for s in sentences if s.strip() and not s.startswith('🚨')]
     
     # 제목 추출 (첫 줄 또는 기본 제목)
     if steps and '경보' in steps[0]:
