@@ -43,7 +43,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _loadUserProfile() {
-    final userProfileAsync = ref.read(userProfileNotifierProvider);
+    final userProfileAsync = ref.read(userProfileProvider);
     userProfileAsync.whenData((profile) {
       if (profile != null) {
         setState(() {
@@ -61,7 +61,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return MainLayout(
-      currentIndex: 2,
+      currentIndex: 3, // 훈련 시스템 추가로 인덱스 변경 (홈/훈련/보상/설정)
       child: Scaffold(
         appBar: AppBar(
           title: const Text('설정'),

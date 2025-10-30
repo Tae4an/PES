@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../presentation/screens/home_screen.dart';
 import '../presentation/screens/action_card_screen.dart';
 import '../presentation/screens/map_screen.dart';
+import '../presentation/screens/training_screen.dart';
+import '../presentation/screens/rewards_screen.dart';
 import '../presentation/screens/notifications_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/login_screen.dart';
@@ -18,8 +20,9 @@ class AppRouter {
   /// 메뉴 인덱스 매핑 (MainLayout 전용)
   static const Map<String, int> _routeIndexMap = {
     '/home': 0,
-    '/map': 1,
-    '/settings': 2,
+    '/training': 1,
+    '/rewards': 2,
+    '/settings': 3,
   };
 
   /// 📱 슬라이드 전환 애니메이션 페이지 빌더
@@ -124,7 +127,29 @@ class AppRouter {
         ),
       ),
 
-      // ✅ 지도 화면
+      // ✅ 훈련 화면
+      GoRoute(
+        path: '/training',
+        name: 'training',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          child: const TrainingScreen(),
+          path: '/training',
+          state: state,
+        ),
+      ),
+
+      // ✅ 보상 화면
+      GoRoute(
+        path: '/rewards',
+        name: 'rewards',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          child: const RewardsScreen(),
+          path: '/rewards',
+          state: state,
+        ),
+      ),
+
+      // ✅ 지도 화면 (기존, 유지)
       GoRoute(
         path: '/map',
         name: 'map',

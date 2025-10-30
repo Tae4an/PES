@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     device_id VARCHAR(255) UNIQUE NOT NULL,
     fcm_token VARCHAR(512),
+    nickname VARCHAR(50) DEFAULT '익명',
     age_group VARCHAR(50),
     mobility VARCHAR(50) DEFAULT '정상',
     is_active BOOLEAN DEFAULT TRUE,
@@ -61,6 +62,42 @@ CREATE TABLE IF NOT EXISTS shelters (
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_shelters_type ON shelters(shelter_type);
 CREATE INDEX IF NOT EXISTS idx_shelters_location ON shelters USING GIST(location);
+
+-- 훈련 세션 테이블
+CREATE TABLE IF NOT EXISTS training_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    shelter_id UUID REFERENCES shelters(id),
+    shelter_name VARCHAR(200),
+    status VARCHAR(20) DEFAULT 'ongoing',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    points_earned INTEGER DEFAULT 0
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_training_user ON training_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_training_status ON training_sessions(status);
+
+-- 사용자 포인트 테이블
+CREATE TABLE IF NOT EXISTS user_points (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    total_points INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 보상 교환 내역 테이블
+CREATE TABLE IF NOT EXISTS reward_redemptions (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    reward_name VARCHAR(100),
+    points_spent INTEGER,
+    redemption_code VARCHAR(20),
+    redeemed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_redemptions_user ON reward_redemptions(user_id);
 
 -- 샘플 대피소 데이터 삽입 (서울 영등포구 기준)
 INSERT INTO shelters (name, address, shelter_type, capacity, location, phone, has_parking, has_generator) VALUES

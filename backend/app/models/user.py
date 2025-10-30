@@ -18,6 +18,7 @@ class User(Base):
     fcm_token = Column(String(512), nullable=True)
     
     # 사용자 프로필 (비식별)
+    nickname = Column(String(50), default='익명')  # 닉네임
     age_group = Column(String(50), nullable=True)  # '청소년', '성인', '노인'
     mobility = Column(String(50), default='정상')  # '정상', '휠체어', '유아동반'
     

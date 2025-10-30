@@ -60,9 +60,14 @@ class MainLayout extends StatelessWidget {
             label: '홈',
           ),
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: '지도',
+            icon: Icon(Icons.fitness_center_outlined),
+            selectedIcon: Icon(Icons.fitness_center),
+            label: '훈련',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.card_giftcard_outlined),
+            selectedIcon: Icon(Icons.card_giftcard),
+            label: '보상',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -82,9 +87,12 @@ class MainLayout extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/map');
+        context.go('/training');
         break;
       case 2:
+        context.go('/rewards');
+        break;
+      case 3:
         context.go('/settings');
         break;
     }
