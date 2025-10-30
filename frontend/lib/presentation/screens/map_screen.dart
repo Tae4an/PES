@@ -187,29 +187,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         Marker(
           markerId: const MarkerId('current_location'),
           position: currentLocation,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueBlue,
-          ),
+          icon: BitmapDescriptor.defaultMarker,
           infoWindow: const InfoWindow(title: '현재 위치'),
         ),
       );
 
       // 특정 위치 마커 - 길찾기 가능
+      // 안산 고잔역 근처
       _markers.add(
         Marker(
           markerId: const MarkerId('custom_location'),
-          position: const LatLng(35.0, -120.0),
-          icon: BitmapDescriptor.defaultMarker, // 기본 빨간색 핀
+          position: const LatLng(37.3115, 126.8412),
+          icon: BitmapDescriptor.defaultMarker,
           infoWindow: const InfoWindow(
-            title: '지정된 위치',
-            snippet: '35.0, -120.0',
+            title: '고잔역',
+            snippet: '탭하여 길찾기',
           ),
           onTap: () {
             _showCustomLocationBottomSheet(
-              name: '지정된 위치',
-              address: '35.0, -120.0',
-              latitude: 35.0,
-              longitude: -120.0,
+              name: '고잔역',
+              address: '안산시 단원구 고잔동',
+              latitude: 37.3115,
+              longitude: 126.8412,
             );
           },
         ),
@@ -222,9 +221,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Marker(
             markerId: MarkerId('shelter_${shelter.id}'),
             position: LatLng(shelter.latitude, shelter.longitude),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-              i < 3 ? BitmapDescriptor.hueRed : BitmapDescriptor.hueOrange,
-            ),
+            icon: BitmapDescriptor.defaultMarker,
             infoWindow: InfoWindow(
               title: shelter.name,
               snippet: '${shelter.type} | ${shelter.walkingMinutes ?? 0}분',

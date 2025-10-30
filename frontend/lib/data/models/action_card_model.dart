@@ -48,9 +48,9 @@ class ActionCardModel {
         location: '제주도', // 기본값
         message: description,
         severity: priority,
-        latitude: 33.4996, // 제주도 기본 위도
-        longitude: 126.5312, // 제주도 기본 경도
-        radiusKm: 10.0, // 기본 반경
+        latitude: 37.3219, // 안산시청 위도
+        longitude: 126.8309, // 안산시청 경도
+        radiusKm: 5.0, // 기본 반경 (안산 시내)
         createdAt: DateTime.parse(createdAt),
         isActive: true,
       ),

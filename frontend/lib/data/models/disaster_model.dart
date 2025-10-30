@@ -35,9 +35,9 @@ class DisasterModel {
       location: '제주도', // 백엔드 데이터에 위치 정보가 없으므로 기본값
       message: message,
       severity: 'high', // 기본값
-      latitude: 33.4996, // 제주도 기본 위도
-      longitude: 126.5312, // 제주도 기본 경도
-      radiusKm: 10.0, // 기본 반경
+      latitude: 37.3219, // 안산시청 위도
+      longitude: 126.8309, // 안산시청 경도
+      radiusKm: 5.0, // 기본 반경 (안산 시내)
       createdAt: DateTime.parse(issuedAt),
       isActive: true, // 활성 재난으로 간주
     );

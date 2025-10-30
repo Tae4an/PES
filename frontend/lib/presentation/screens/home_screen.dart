@@ -38,20 +38,6 @@ class HomeScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('PES'),
           actions: [
-            // 테스트 모드 토글
-            Switch(
-              value: testMode,
-              onChanged: (value) {
-                ref.read(testModeProvider.notifier).toggle();
-                // 테스트 모드 OFF 시 데이터 초기화
-                if (!value) {
-                  ref.read(testDisasterProvider.notifier).clear();
-                  ref.read(testActionCardProvider.notifier).clear();
-                }
-              },
-              activeColor: AppColors.warning,
-            ),
-            const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => context.push('/notifications'),
@@ -179,7 +165,7 @@ class HomeScreen extends ConsumerWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '[${testDisaster.type}] ${testDisaster.severity}',
+                                        '${testDisaster.type} - ${testDisaster.severity}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleLarge
@@ -211,9 +197,57 @@ class HomeScreen extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(
                                     AppConstants.borderRadiusSmall),
                               ),
-                              child: Text(
-                                testDisaster.message,
-                                style: Theme.of(context).textTheme.bodyMedium,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '나중에 llm연결',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontSize: (Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.fontSize ??
+                                                  14) *
+                                              1.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '나중에 llm연결',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontSize: (Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.fontSize ??
+                                                  14) *
+                                              1.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '나중에 llm연결',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontSize: (Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.fontSize ??
+                                                  14) *
+                                              1.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -302,9 +336,7 @@ class HomeScreen extends ConsumerWidget {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                DisasterTypeConfig.getConfig(
-                                                        disaster.type)
-                                                    .displayName,
+                                                '${DisasterTypeConfig.getConfig(disaster.type).displayName} - ${disaster.type}',
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .titleLarge
@@ -346,11 +378,58 @@ class HomeScreen extends ConsumerWidget {
                                         borderRadius: BorderRadius.circular(
                                             AppConstants.borderRadiusSmall),
                                       ),
-                                      child: Text(
-                                        disaster.message,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '나중에 llm연결',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontSize: (Theme.of(context)
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.fontSize ??
+                                                          14) *
+                                                      1.5,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '나중에 llm연결',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontSize: (Theme.of(context)
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.fontSize ??
+                                                          14) *
+                                                      1.5,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '나중에 llm연결',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontSize: (Theme.of(context)
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.fontSize ??
+                                                          14) *
+                                                      1.5,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(height: 12),
