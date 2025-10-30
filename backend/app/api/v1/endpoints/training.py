@@ -188,7 +188,8 @@ async def get_nearby_shelters(
 @router.post("/start", response_model=StartTrainingResponse)
 async def start_training(
     request: StartTrainingRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    shelter_db: AsyncSession = Depends(get_shelter_db)
 ):
     """
     훈련 시작
@@ -208,9 +209,9 @@ async def start_training(
                 detail="사용자를 찾을 수 없습니다"
             )
         
-        # 2. 대피소 확인
+        # 2. 대피소 확인 (shelter DB 사용)
         shelter_query = select(Shelter).where(Shelter.id == request.shelter_id)
-        shelter_result = await db.execute(shelter_query)
+        shelter_result = await shelter_db.execute(shelter_query)
         shelter = shelter_result.scalar_one_or_none()
         
         if not shelter:
@@ -219,19 +220,9 @@ async def start_training(
                 detail="대피소를 찾을 수 없습니다"
             )
         
-        # 3. 대피소 위치 추출 (PostGIS)
-        location_query = text(f"""
-            SELECT 
-                ST_Y(location::geometry) as latitude,
-                ST_X(location::geometry) as longitude
-            FROM shelters
-            WHERE id = :shelter_id
-        """)
-        location_result = await db.execute(location_query, {"shelter_id": request.shelter_id})
-        location_row = location_result.fetchone()
-        
-        shelter_lat = location_row.latitude
-        shelter_lon = location_row.longitude
+        # 3. 대피소 위치 (이미 latitude, longitude 컬럼 존재)
+        shelter_lat = float(shelter.latitude)
+        shelter_lon = float(shelter.longitude)
         
         # 4. 초기 거리 계산
         initial_distance = calculate_distance(
@@ -282,7 +273,8 @@ async def start_training(
 @router.post("/check", response_model=CheckCompletionResponse)
 async def check_completion(
     request: CheckCompletionRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    shelter_db: AsyncSession = Depends(get_shelter_db)
 ):
     """
     훈련 완료 확인
@@ -304,19 +296,19 @@ async def check_completion(
                 detail="진행 중인 훈련을 찾을 수 없습니다"
             )
         
-        # 2. 대피소 위치 조회
-        location_query = text(f"""
-            SELECT 
-                ST_Y(location::geometry) as latitude,
-                ST_X(location::geometry) as longitude
-            FROM shelters
-            WHERE id = :shelter_id
-        """)
-        location_result = await db.execute(location_query, {"shelter_id": str(session.shelter_id)})
-        location_row = location_result.fetchone()
+        # 2. 대피소 위치 조회 (shelter DB 사용)
+        shelter_query = select(Shelter).where(Shelter.id == session.shelter_id)
+        shelter_result = await shelter_db.execute(shelter_query)
+        shelter = shelter_result.scalar_one_or_none()
         
-        shelter_lat = location_row.latitude
-        shelter_lon = location_row.longitude
+        if not shelter:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="대피소를 찾을 수 없습니다"
+            )
+        
+        shelter_lat = float(shelter.latitude)
+        shelter_lon = float(shelter.longitude)
         
         # 3. 현재 거리 계산
         distance = calculate_distance(
