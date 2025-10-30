@@ -3,20 +3,17 @@
     {
       "user_id": "user_001",
       "name": "김철수",
-      "age": 65,
       "gender": "male",
       "health_conditions": [
         {
           "condition": "고혈압",
           "severity": "중증",
-          "medication": ["암로디핀", "로사르탄"],
-          "precautions": ["급격한 운동 제한", "염분 섭취 주의", "스트레스 관리 필요"]
+          "medication": ["암로디핀", "로사르탄"]
         },
         {
           "condition": "당뇨병",
           "severity": "경증",
-          "medication": ["메트포르민"],
-          "precautions": ["혈당 관리", "규칙적인 식사", "저혈당 주의"]
+          "medication": ["메트포르민"]
         }
       ],
       "mobility": "limited",
@@ -26,14 +23,12 @@
     {
       "user_id": "user_002",
       "name": "이영희",
-      "age": 42,
       "gender": "female",
       "health_conditions": [
         {
           "condition": "천식",
           "severity": "중증",
-          "medication": ["흡입용 스테로이드", "살부타몰"],
-          "precautions": ["미세먼지 주의", "연기 노출 금지", "흡입기 항상 소지", "격렬한 운동 제한"]
+          "medication": ["흡입용 스테로이드", "살부타몰"]
         }
       ],
       "mobility": "normal",
@@ -43,14 +38,12 @@
     {
       "user_id": "user_003",
       "name": "박민수",
-      "age": 28,
       "gender": "male",
       "health_conditions": [
         {
           "condition": "간질",
           "severity": "중증",
-          "medication": ["레베티라세탐"],
-          "precautions": ["규칙적인 약물 복용", "수면 부족 금지", "과도한 스트레스 회피", "발작 시 안전 확보"]
+          "medication": ["레베티라세탐"]
         }
       ],
       "mobility": "normal",
@@ -60,20 +53,17 @@
     {
       "user_id": "user_004",
       "name": "최수진",
-      "age": 55,
       "gender": "female",
       "health_conditions": [
         {
           "condition": "심장병",
           "severity": "중증",
-          "medication": ["아스피린", "베타차단제", "스타틴"],
-          "precautions": ["격렬한 운동 금지", "계단 이용 제한", "흉통 발생 시 즉시 응급조치", "니트로글리세린 상시 휴대"]
+          "medication": ["아스피린", "베타차단제", "스타틴"]
         },
         {
           "condition": "고지혈증",
           "severity": "경증",
-          "medication": ["아토르바스타틴"],
-          "precautions": ["저지방 식이", "규칙적인 운동"]
+          "medication": ["아토르바스타틴"]
         }
       ],
       "mobility": "limited",
@@ -83,14 +73,12 @@
     {
       "user_id": "user_005",
       "name": "정민호",
-      "age": 38,
       "gender": "male",
       "health_conditions": [
         {
           "condition": "파킨슨병",
           "severity": "중증",
-          "medication": ["레보도파"],
-          "precautions": ["낙상 주의", "균형 장애", "느린 움직임", "보행 보조 필요", "약물 복용 시간 엄수"]
+          "medication": ["레보도파"]
         }
       ],
       "mobility": "wheelchair",
