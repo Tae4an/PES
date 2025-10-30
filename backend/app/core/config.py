@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     REDIS_CACHE_TTL: int = 1800  # 30분
     
+    # 공공데이터포털 API (추가!)
+    PUBLIC_DATA_PORTAL_KEY: str = ""
+    
+    # Google Maps API (추가!)
+    GOOGLE_MAPS_API_KEY: Optional[str] = None
+    
     # Ollama (별도 AI 서버에서 실행)
     OLLAMA_ENDPOINT: str = "http://localhost:11434"  # 로컬 AI 서버
     OLLAMA_MODEL: str = "qwen3:8b" 
