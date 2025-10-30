@@ -252,16 +252,5 @@ class TrainingUserProvider extends ChangeNotifier {
     _state = _state.copyWith(totalPoints: _state.totalPoints - points);
     notifyListeners();
   }
-
-  /// 로그아웃 (로컬 데이터 삭제)
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    
-    _state = TrainingUserState();
-    notifyListeners();
-    
-    AppLogger.i('로그아웃 완료');
-  }
 }
 

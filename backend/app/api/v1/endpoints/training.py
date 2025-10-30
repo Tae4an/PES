@@ -194,12 +194,15 @@ async def start_training(
     훈련 시작
     """
     try:
-        # 1. 사용자 확인
-        user_query = select(User).where(User.device_id == request.device_id)
+        # 1. 사용자 확인 (device_id 또는 username으로 찾기)
+        user_query = select(User).where(
+            (User.device_id == request.device_id) | (User.username == request.device_id)
+        )
         user_result = await db.execute(user_query)
         user = user_result.scalar_one_or_none()
         
         if not user:
+            logger.error(f"사용자를 찾을 수 없음: device_id={request.device_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="사용자를 찾을 수 없습니다"
