@@ -6,6 +6,9 @@ class MainLayout extends StatelessWidget {
   final Widget child;
   final int currentIndex;
 
+  // 이전 인덱스를 저장하는 정적 변수
+  static int _previousIndex = 0;
+
   const MainLayout({
     Key? key,
     required this.child,
@@ -51,11 +54,6 @@ class MainLayout extends StatelessWidget {
             label: '지도',
           ),
           NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications),
-            label: '알림',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: '설정',
@@ -66,6 +64,9 @@ class MainLayout extends StatelessWidget {
   }
 
   void _onItemTapped(BuildContext context, int index) {
+    // 이전 인덱스 업데이트
+    _previousIndex = currentIndex;
+    
     switch (index) {
       case 0:
         context.go('/home');
@@ -74,12 +75,13 @@ class MainLayout extends StatelessWidget {
         context.go('/map');
         break;
       case 2:
-        context.go('/notifications');
-        break;
-      case 3:
         context.go('/settings');
         break;
     }
   }
+
+  /// 현재와 이전 인덱스를 비교하여 슬라이드 방향 결정
+  static int getPreviousIndex() => _previousIndex;
+  static void setPreviousIndex(int index) => _previousIndex = index;
 }
 

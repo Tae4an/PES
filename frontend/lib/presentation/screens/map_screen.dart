@@ -78,23 +78,77 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             }
           });
 
-          return GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: currentLatLng,
-              zoom: AppConstants.defaultZoom,
-            ),
-            markers: _markers,
-            circles: _circles,
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: true,
-            mapToolbarEnabled: true,
-            onTap: (latLng) {
-              // 지도 탭 시 마커 정보 닫기
-            },
+          return Column(
+            children: [
+              // 상단 여백 - 현재 위치 정보 (화면의 15%)
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.15,
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            '현재 위치',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '마지막 업데이트: 방금 전',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.grey,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // 지도 영역 (화면의 30%)
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.3,
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: currentLatLng,
+                    zoom: AppConstants.defaultZoom,
+                  ),
+                  markers: _markers,
+                  circles: _circles,
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: true,
+                  mapToolbarEnabled: true,
+                  onTap: (latLng) {
+                    // 지도 탭 시 마커 정보 닫기
+                  },
+                ),
+              ),
+              // 대피소 목록 영역 (55%)
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.55,
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: const Center(
+                    child: Text('대피소 목록이 여기 표시됩니다'),
+                  ),
+                ),
+              ),
+            ],
           );
         },
         loading: () => const Center(

@@ -27,6 +27,10 @@ class HomeScreen extends ConsumerWidget {
           title: const Text('PES'),
           actions: [
             IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () => context.push('/notifications'),
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(currentLocationProvider);
@@ -46,62 +50,6 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 현재 위치 섹션
-              locationAsync.when(
-                data: (location) => location != null
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, size: 16),
-                              const SizedBox(width: 4),
-                              Text(
-                                '현재 위치',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '마지막 업데이트: 방금 전',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppColors.grey,
-                                ),
-                          ),
-                        ],
-                      )
-                    : Card(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        child: const Padding(
-                          padding: EdgeInsets.all(AppConstants.paddingLarge),
-                          child: Row(
-                            children: [
-                              Icon(Icons.location_off),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text('위치 정보를 가져올 수 없습니다'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                loading: () => const LoadingSkeletonCard(height: 80),
-                error: (e, st) => ErrorCard(
-                  error: e.toString(),
-                  onRetry: () => ref.invalidate(currentLocationProvider),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 24),
-
               // 활성 재난 경보 섹션
               Text(
                 '활성 재난 경보',
