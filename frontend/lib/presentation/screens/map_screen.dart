@@ -113,19 +113,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: Stack(
                     children: [
                       GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: currentLatLng,
-                          zoom: AppConstants.defaultZoom,
+                        initialCameraPosition: const CameraPosition(
+                          target: LatLng(37.2970, 126.8373), // 한양대 ERICA 고정
+                          zoom: 15.0,
                         ),
                         markers: _markers,
                         circles: _circles,
                         onMapCreated: (controller) {
                           _mapController = controller;
+                          // 마커 업데이트 후 카메라 이동
+                          Future.delayed(const Duration(milliseconds: 500), () {
+                            controller.animateCamera(
+                              CameraUpdate.newLatLngZoom(
+                                const LatLng(37.2970, 126.8373),
+                                15.0,
+                              ),
+                            );
+                          });
                         },
                         myLocationEnabled: true,
                         myLocationButtonEnabled: false,
                         zoomControlsEnabled: false,
-                        mapToolbarEnabled: true,
+                        mapToolbarEnabled: false,
                         onTap: (latLng) {
                           // 지도 탭 시 마커 정보 닫기
                         },
@@ -235,11 +244,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       // 디버그: 마커 수 출력
       print('🗺️ 마커 업데이트 완료: ${_markers.length}개');
-      print('📍 현재 위치: ${currentLocation.latitude}, ${currentLocation.longitude}');
+      print(
+          '📍 현재 위치: ${currentLocation.latitude}, ${currentLocation.longitude}');
       print('🏫 한양대 ERICA: 37.2970, 126.8373');
       print('📌 마커 상세:');
       for (var marker in _markers) {
-        print('   - ${marker.markerId.value}: (${marker.position.latitude}, ${marker.position.longitude})');
+        print(
+            '   - ${marker.markerId.value}: (${marker.position.latitude}, ${marker.position.longitude})');
       }
     });
   }
