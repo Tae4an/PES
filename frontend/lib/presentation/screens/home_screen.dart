@@ -489,46 +489,47 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
 
-                // 빠른 액션 섹션
-                Text(
-                  '빠른 액션',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                // 빠른 액션 섹션 제거, 원형 긴급전화 버튼만 표시
+                const SizedBox(height: 8),
+                Center(
+                  child: Column(
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(44),
+                        onTap: () => _showEmergencyContacts(context),
+                        child: Container(
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            color: AppColors.warning,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.phone,
+                              color: Colors.white,
+                              size: 36,
+                            ),
+                          ),
+                        ),
                       ),
-                ),
-                const SizedBox(height: 16),
-
-                // 빠른 액션 그리드
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: [
-                    _QuickActionCard(
-                      icon: Icons.shield_outlined,
-                      label: '행동카드',
-                      color: AppColors.critical,
-                      onTap: () => context.push('/action-card'),
-                    ),
-                    _QuickActionCard(
-                      icon: Icons.phone,
-                      label: '긴급전화',
-                      color: AppColors.warning,
-                      onTap: () => _showEmergencyContacts(context),
-                    ),
-                    _QuickActionCard(
-                      icon: Icons.favorite_outline,
-                      label: '안전수칙',
-                      color: AppColors.safe,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('준비 중입니다')),
-                        );
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      Text(
+                        '긴급전화',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 // FCM 테스트 섹션 (개발용)
@@ -816,58 +817,4 @@ class _TestScenarioButton extends StatelessWidget {
   }
 }
 
-/// 빠른 액션 카드 위젯
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// (삭제됨) 빠른 액션 카드 위젯은 더 이상 사용하지 않습니다.

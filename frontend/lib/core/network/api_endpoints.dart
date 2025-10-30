@@ -13,7 +13,7 @@ class ApiEndpoints {
 
   // Shelters
   static const String shelters = '$base/shelters';
-  static const String nearestShelters = '$shelters/nearest';
+  static const String nearestShelters = '$shelters/nearby';
   static const String shelterById = '$shelters/{id}';
   static const String searchShelters = '$shelters/search';
 

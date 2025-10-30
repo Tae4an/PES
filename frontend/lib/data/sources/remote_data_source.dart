@@ -22,7 +22,7 @@ abstract class RemoteDataSource {
   );
 
   // Shelter Endpoints
-  @GET('/api/v1/shelters/nearest')
+  @GET('/api/v1/shelters/nearby')
   Future<List<ShelterModel>> getNearestShelters(
     @Query('latitude') double latitude,
     @Query('longitude') double longitude,

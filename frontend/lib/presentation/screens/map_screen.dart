@@ -223,7 +223,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       );
 
-      // 대피소 마커
+      // 대피소 마커 (API 데이터 기반)
       for (int i = 0; i < shelters.length; i++) {
         final shelter = shelters[i];
         _markers.add(
@@ -233,7 +233,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             icon: BitmapDescriptor.defaultMarker,
             infoWindow: InfoWindow(
               title: shelter.name,
-              snippet: '${shelter.type} | ${shelter.walkingMinutes ?? 0}분',
+              snippet:
+                  '${shelter.type} · ${(shelter.distanceKm ?? 0).toStringAsFixed(2)}km · ${shelter.walkingMinutes ?? 0}분',
             ),
             onTap: () {
               _showShelterBottomSheet(shelter);
