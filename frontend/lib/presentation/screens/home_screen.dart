@@ -14,6 +14,7 @@ import '../widgets/error_card.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/main_layout.dart';
 import '../widgets/action_card_widget.dart';
+import '../widgets/shelter_map_widget.dart';
 import '../../core/services/fcm_service.dart';
 import '../../core/network/dio_client.dart';
 
@@ -437,13 +438,11 @@ class HomeScreen extends ConsumerWidget {
                                       width: double.infinity,
                                       child: FilledButton.icon(
                                         onPressed: () =>
-                                            context.push('/action-card'),
-                                        icon: const Icon(Icons.shield),
-                                        label: const Text('행동 카드 보기'),
+                                            _showShelterMapDialog(context),
+                                        icon: const Icon(Icons.map),
+                                        label: const Text('대피소 안내'),
                                         style: FilledButton.styleFrom(
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .error,
+                                          backgroundColor: AppColors.safe,
                                         ),
                                       ),
                                     ),
@@ -657,6 +656,59 @@ class HomeScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  /// 대피소 지도 다이얼로그 표시
+  static void _showShelterMapDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          width: MediaQuery.of(context).size.width,
+          child: Column(
+            children: [
+              // 헤더
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.safe,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.map, color: Colors.white),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '대피소 안내',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // 지도 위젯
+              const Expanded(
+                child: ShelterMapWidget(showAppBar: false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// 테스트 시나리오 트리거
