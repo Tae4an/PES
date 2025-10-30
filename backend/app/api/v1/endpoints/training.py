@@ -457,3 +457,84 @@ async def abandon_training(
             detail="훈련 포기 처리 실패"
         )
 
+
+@router.post("/dev/auto-complete/{session_id}")
+async def dev_auto_complete_training(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    shelter_db: AsyncSession = Depends(get_shelter_db)
+):
+    """
+    [개발자용] 훈련 자동 완료 트리거
+    
+    훈련 중인 사용자를 대피소까지 자동으로 이동시키고 완료 처리합니다.
+    """
+    try:
+        # 1. 훈련 세션 확인
+        session_query = select(TrainingSession).where(
+            TrainingSession.id == session_id,
+            TrainingSession.status == 'ongoing'
+        )
+        session_result = await db.execute(session_query)
+        session = session_result.scalar_one_or_none()
+        
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="진행 중인 훈련을 찾을 수 없습니다"
+            )
+        
+        # 2. 대피소 위치 조회
+        shelter_query = select(Shelter).where(Shelter.id == session.shelter_id)
+        shelter_result = await shelter_db.execute(shelter_query)
+        shelter = shelter_result.scalar_one_or_none()
+        
+        if not shelter:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="대피소를 찾을 수 없습니다"
+            )
+        
+        # 3. 훈련 완료 처리 (거리 = 0m)
+        session.status = 'completed'
+        session.completed_at = datetime.utcnow()
+        session.points_earned = TRAINING_COMPLETION_POINTS
+        
+        # 4. 포인트 지급
+        points_query = select(UserPoints).where(UserPoints.user_id == session.user_id)
+        points_result = await db.execute(points_query)
+        user_points = points_result.scalar_one_or_none()
+        
+        if user_points:
+            user_points.total_points += TRAINING_COMPLETION_POINTS
+            user_points.updated_at = datetime.utcnow()
+        else:
+            user_points = UserPoints(
+                user_id=session.user_id,
+                total_points=TRAINING_COMPLETION_POINTS
+            )
+            db.add(user_points)
+        
+        await db.commit()
+        
+        logger.info(f"[DEV] Training auto-completed: session_id={session_id}")
+        
+        return {
+            "success": True,
+            "message": "훈련이 자동으로 완료되었습니다",
+            "is_completed": True,
+            "points_earned": TRAINING_COMPLETION_POINTS,
+            "total_points": user_points.total_points,
+            "distance": 0.0
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error auto-completing training: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"자동 완료 실패: {str(e)}"
+        )
+

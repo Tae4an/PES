@@ -163,5 +163,11 @@ class TrainingApiService {
     final response = await _dio.get('/api/v1/rewards/my-codes/$deviceId');
     return response.data['codes'];
   }
+
+  /// [개발자용] 훈련 자동 완료
+  Future<Map<String, dynamic>> devAutoComplete(int sessionId) async {
+    final response = await _dio.post('/api/v1/training/dev/auto-complete/$sessionId');
+    return response.data;
+  }
 }
 

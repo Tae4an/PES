@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:confetti/confetti.dart';
 import '../providers/training_provider.dart';
 import '../providers/training_user_provider.dart';
 import '../providers/rewards_provider.dart';
 import '../widgets/main_layout.dart';
 import '../../core/utils/logger.dart';
+import '../../data/sources/training_api_service.dart';
 
 /// 훈련 화면
 class TrainingScreen extends StatefulWidget {
@@ -21,11 +23,20 @@ class _TrainingScreenState extends State<TrainingScreen> {
   LatLng? _currentLocation;
   bool _isLoadingLocation = true;
   Set<Marker> _markers = {};
+  late ConfettiController _confettiController;
+  final TrainingApiService _apiService = TrainingApiService();
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _getCurrentLocation();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -120,18 +131,21 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     AppLogger.i('훈련 시작 시도 - userId: ${trainingUserProvider.state.userId}, deviceId: ${trainingUserProvider.state.deviceId}');
     
-    if (trainingUserProvider.state.userId == null || _currentLocation == null) {
-      AppLogger.e('로그인 정보 없음 - userId: ${trainingUserProvider.state.userId}, location: $_currentLocation');
+    if (trainingUserProvider.state.userId == null) {
+      AppLogger.e('로그인 정보 없음 - userId: ${trainingUserProvider.state.userId}');
       _showMessage('로그인이 필요합니다. 설정에서 로그아웃 후 다시 로그인하세요.');
       return;
     }
 
     try {
+      // 한양대 ERICA 위치로 훈련 시작 (샌프란시스코 위치 무시)
+      const hanyangLocation = LatLng(37.295692, 126.841425);
+      
       // userId를 deviceId처럼 사용 (백엔드에서 device_id 파라미터로 받음)
       await trainingProvider.startTraining(
         deviceId: trainingUserProvider.state.deviceId ?? trainingUserProvider.state.userId!,
         shelter: shelter,
-        currentLocation: _currentLocation!,
+        currentLocation: hanyangLocation,
         onLocationCheck: (sessionId) => _checkLocation(sessionId),
       );
 
@@ -164,6 +178,36 @@ class _TrainingScreenState extends State<TrainingScreen> {
     }
   }
 
+  // [개발자용] 자동 완료 트리거
+  Future<void> _devAutoComplete() async {
+    final trainingProvider = context.read<TrainingProvider>();
+    final trainingUserProvider = context.read<TrainingUserProvider>();
+    final sessionId = trainingProvider.state.currentSession?.sessionId;
+
+    if (sessionId == null) {
+      _showMessage('진행 중인 훈련이 없습니다');
+      return;
+    }
+
+    try {
+      final result = await _apiService.devAutoComplete(sessionId);
+      
+      // 상태 업데이트
+      trainingProvider.resetTraining();
+      trainingUserProvider.addPoints(result['points_earned']);
+      context.read<RewardsProvider>().addPoints(result['points_earned']);
+      
+      // 축하 애니메이션 표시
+      _confettiController.play();
+      
+      // 완료 다이얼로그 표시 (result 전달)
+      _showCompletionDialogWithData(result);
+    } catch (e) {
+      AppLogger.e('자동 완료 실패: $e');
+      _showMessage('자동 완료 실패: $e');
+    }
+  }
+
   void _showCompletionDialog() {
     final trainingProvider = context.read<TrainingProvider>();
     final pointsEarned = trainingProvider.state.pointsEarned ?? 0;
@@ -172,19 +216,157 @@ class _TrainingScreenState extends State<TrainingScreen> {
     context.read<TrainingUserProvider>().addPoints(pointsEarned);
     context.read<RewardsProvider>().addPoints(pointsEarned);
 
+    // 축하 애니메이션
+    _confettiController.play();
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('🎉 훈련 완료!'),
-        content: Text('축하합니다!\n$pointsEarned 포인트를 획득했습니다!'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
+          children: [
+            const Icon(Icons.celebration, size: 60, color: Colors.amber),
+            const SizedBox(height: 8),
+            const Text(
+              '훈련 완료!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '대피소에 도착했습니다!',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    '획득 포인트',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '+$pointsEarned P',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              trainingProvider.resetTraining();
-            },
-            child: const Text('확인'),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                trainingProvider.resetTraining();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                '확인',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompletionDialogWithData(Map<String, dynamic> result) {
+    final pointsEarned = result['points_earned'] ?? 0;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
+          children: [
+            const Icon(Icons.celebration, size: 60, color: Colors.amber),
+            const SizedBox(height: 8),
+            const Text(
+              '훈련 완료!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '대피소에 도착했습니다!',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    '획득 포인트',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '+$pointsEarned P',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                '확인',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
           ),
         ],
       ),
@@ -369,58 +551,79 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   // 훈련 상태 UI
   Widget _buildTrainingStatus(TrainingState state) {
-    return Container(
-      padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.directions_run, size: 80, color: Colors.blue),
-          const SizedBox(height: 24),
+          const Icon(Icons.directions_run, size: 60, color: Colors.blue),
+          const SizedBox(height: 16),
           
           Text(
-            '🎯 목표 대피소',
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            '목표 대피소',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             state.currentSession?.shelter.name ?? '',
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           
           Text(
             '남은 거리',
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             '${state.currentDistance.toStringAsFixed(0)}m',
             style: const TextStyle(
-              fontSize: 48,
+              fontSize: 40,
               fontWeight: FontWeight.bold,
               color: Colors.blue,
             ),
           ),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           
           // 진행률
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: 1 - (state.currentDistance / (state.currentSession?.initialDistance ?? 1)),
-              minHeight: 20,
+              minHeight: 16,
               backgroundColor: Colors.grey[200],
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
             ),
           ),
           
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
+          
+          // [개발자용] 자동 완료 버튼
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _devAutoComplete,
+              icon: const Icon(Icons.flash_on, color: Colors.white),
+              label: const Text(
+                '[DEV] 자동 완료',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                backgroundColor: Colors.green,
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 12),
           
           // 포기 버튼
           SizedBox(
@@ -434,7 +637,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
               icon: const Icon(Icons.close),
               label: const Text('훈련 포기'),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 side: const BorderSide(color: Colors.red),
                 foregroundColor: Colors.red,
               ),
@@ -471,41 +674,65 @@ class _TrainingScreenState extends State<TrainingScreen> {
         ),
         body: _isLoadingLocation
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : Stack(
               children: [
-                // 상단: 지도 (화면의 40%)
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.35,
-                  child: _currentLocation != null
-                    ? GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: _currentLocation!,
-                          zoom: 15,
-                        ),
-                        markers: _markers,
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: true,
-                        onMapCreated: (controller) {
-                          _mapController = controller;
+                Column(
+                  children: [
+                    // 상단: 지도 (화면의 40%)
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.35,
+                      child: _currentLocation != null
+                        ? GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: _currentLocation!,
+                              zoom: 15,
+                            ),
+                            markers: _markers,
+                            myLocationEnabled: true,
+                            myLocationButtonEnabled: true,
+                            onMapCreated: (controller) {
+                              _mapController = controller;
+                            },
+                          )
+                        : const Center(child: Text('위치 로딩 중...')),
+                    ),
+                    
+                    // 하단: 대피소 목록 또는 훈련 상태
+                    Expanded(
+                      child: Consumer<TrainingProvider>(
+                        builder: (context, trainingProvider, _) {
+                          final state = trainingProvider.state;
+
+                          if (state.isTraining) {
+                            // 훈련 중일 때
+                            return _buildTrainingStatus(state);
+                          } else {
+                            // 대피소 목록
+                            return _buildShelterList(state);
+                          }
                         },
-                      )
-                    : const Center(child: Text('위치 로딩 중...')),
+                      ),
+                    ),
+                  ],
                 ),
                 
-                // 하단: 대피소 목록 또는 훈련 상태
-                Expanded(
-                  child: Consumer<TrainingProvider>(
-                    builder: (context, trainingProvider, _) {
-                      final state = trainingProvider.state;
-
-                      if (state.isTraining) {
-                        // 훈련 중일 때
-                        return _buildTrainingStatus(state);
-                      } else {
-                        // 대피소 목록
-                        return _buildShelterList(state);
-                      }
-                    },
+                // 축하 confetti
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConfettiWidget(
+                    confettiController: _confettiController,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    shouldLoop: false,
+                    colors: const [
+                      Colors.red,
+                      Colors.blue,
+                      Colors.green,
+                      Colors.yellow,
+                      Colors.purple,
+                      Colors.orange,
+                    ],
+                    numberOfParticles: 30,
+                    emissionFrequency: 0.05,
                   ),
                 ),
               ],
