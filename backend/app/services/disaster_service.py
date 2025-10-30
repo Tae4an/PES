@@ -32,6 +32,7 @@ class DisasterService:
         CSV 파일에서 Mock 데이터를 로드하여 Pydantic 모델로 변환
         """
         try:
+            settings.MOCK_DATA_PATH = settings.MOCK_DATA_PATH[:-1]
             csv_path = Path(settings.MOCK_DATA_PATH)
             
             if not csv_path.exists():
