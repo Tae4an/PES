@@ -12,7 +12,7 @@ ActionCardModel _$ActionCardModelFromJson(Map<String, dynamic> json) =>
       disasterId: (json['disaster_id'] as num).toInt(),
       title: json['title'] as String,
       description: json['description'] as String,
-      priority: json['priority'] as String,
+      priority: json['priority'] as String?,
       estimatedTime: (json['estimated_time'] as num).toInt(),
       steps: (json['steps'] as List<dynamic>).map((e) => e as String).toList(),
       emergencyContacts: (json['emergency_contacts'] as List<dynamic>)
