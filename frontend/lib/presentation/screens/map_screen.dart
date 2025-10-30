@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/constants.dart';
 import '../providers/location_provider.dart';
 import '../providers/shelter_provider.dart';
-import '../providers/disaster_provider.dart';
+// import '../providers/disaster_provider.dart';
 import '../widgets/main_layout.dart';
 
 /// 지도 전체보기 화면
@@ -20,11 +20,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   final Set<Circle> _circles = {};
+  bool _markersInitialized = false;
 
   @override
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(currentLocationProvider);
-    final activeDisastersAsync = ref.watch(activeDisastersProvider);
+    // final activeDisastersAsync = ref.watch(activeDisastersProvider);
 
     return MainLayout(
       currentIndex: 1,
@@ -48,25 +49,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
             final currentLatLng = LatLng(location.latitude, location.longitude);
 
-            // 대피소 정보 가져오기
+            // 대피소 정보 가져오기 (한양대 ERICA 기준 고정)
             final sheltersAsync = ref.watch(
               nearestSheltersProvider(NearestSheltersParams(
-                latitude: location.latitude,
-                longitude: location.longitude,
-                limit: 20,
+                latitude: 37.295692,
+                longitude: 126.841425,
+                limit: 10,
               )),
             );
 
-            sheltersAsync.whenData((shelters) {
-              _updateMarkers(currentLatLng, shelters);
-            });
+            // 대피소 마커 업데이트
+            sheltersAsync.when(
+              data: (shelters) {
+                if (!_markersInitialized && shelters.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _updateMarkers(currentLatLng, shelters);
+                    _markersInitialized = true;
+                  });
+                }
+                return null;
+              },
+              loading: () => null,
+              error: (_, __) => null,
+            );
 
-            // 재난 위험 지역 표시
-            activeDisastersAsync.whenData((disasters) {
-              if (disasters.isNotEmpty) {
-                _updateDisasterCircle(disasters.first);
-              }
-            });
+            // 재난 위험 지역 표시 (비활성화)
+            // activeDisastersAsync.whenData((disasters) {
+            //   if (disasters.isNotEmpty) {
+            //     WidgetsBinding.instance.addPostFrameCallback((_) {
+            //       _updateDisasterCircle(disasters.first);
+            //     });
+            //   }
+            // });
 
             return Column(
               children: [
@@ -226,9 +240,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       // 대피소 마커 (API 데이터 기반)
       for (int i = 0; i < shelters.length; i++) {
         final shelter = shelters[i];
+        final uniqueId = 'shelter_${shelter.latitude}_${shelter.longitude}';
         _markers.add(
           Marker(
-            markerId: MarkerId('shelter_${shelter.id}'),
+            markerId: MarkerId(uniqueId),
             position: LatLng(shelter.latitude, shelter.longitude),
             icon: BitmapDescriptor.defaultMarker,
             infoWindow: InfoWindow(
@@ -256,21 +271,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
-  void _updateDisasterCircle(disaster) {
-    setState(() {
-      _circles.clear();
-      _circles.add(
-        Circle(
-          circleId: CircleId('disaster_${disaster.id}'),
-          center: LatLng(disaster.latitude, disaster.longitude),
-          radius: disaster.radiusKm * 1000, // km to meters
-          fillColor: AppColors.critical.withValues(alpha: 0.2),
-          strokeColor: AppColors.critical,
-          strokeWidth: 2,
-        ),
-      );
-    });
-  }
+  // void _updateDisasterCircle(disaster) {
+  //   setState(() {
+  //     _circles.clear();
+  //     _circles.add(
+  //       Circle(
+  //         circleId: CircleId('disaster_${disaster.id}'),
+  //         center: LatLng(disaster.latitude, disaster.longitude),
+  //         radius: disaster.radiusKm * 1000, // km to meters
+  //         fillColor: AppColors.critical.withValues(alpha: 0.2),
+  //         strokeColor: AppColors.critical,
+  //         strokeWidth: 2,
+  //       ),
+  //     );
+  //   });
+  // }
 
   void _showShelterBottomSheet(shelter) {
     showModalBottomSheet(

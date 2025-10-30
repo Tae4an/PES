@@ -7,13 +7,13 @@ part of 'shelter_model.dart';
 // **************************************************************************
 
 ShelterModel _$ShelterModelFromJson(Map<String, dynamic> json) => ShelterModel(
-      id: (json['id'] as num).toInt(),
+      id: (json['id'] as num?)?.toInt() ?? 0,
       name: json['name'] as String,
       address: json['address'] as String,
-      type: json['type'] as String,
+      type: json['shelter_type'] as String,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
-      capacity: (json['capacity'] as num).toInt(),
+      capacity: (json['capacity'] as num?)?.toInt() ?? 0,
       phoneNumber: json['phone_number'] as String?,
       facilities: (json['facilities'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -28,7 +28,7 @@ Map<String, dynamic> _$ShelterModelToJson(ShelterModel instance) =>
       'id': instance.id,
       'name': instance.name,
       'address': instance.address,
-      'type': instance.type,
+      'shelter_type': instance.type,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'capacity': instance.capacity,

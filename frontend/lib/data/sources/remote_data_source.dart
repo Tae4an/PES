@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../models/disaster_model.dart';
 import '../models/shelter_model.dart';
+import '../models/shelter_response_model.dart';
 import '../models/action_card_model.dart';
 
 part 'remote_data_source.g.dart';
@@ -23,9 +24,9 @@ abstract class RemoteDataSource {
 
   // Shelter Endpoints
   @GET('/api/v1/shelters/nearby')
-  Future<List<ShelterModel>> getNearestShelters(
-    @Query('latitude') double latitude,
-    @Query('longitude') double longitude,
+  Future<ShelterResponseModel> getNearestShelters(
+    @Query('lat') double latitude,
+    @Query('lng') double longitude,
     @Query('limit') int limit,
   );
 
