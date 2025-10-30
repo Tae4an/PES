@@ -31,7 +31,6 @@ class ActionCardResponse(BaseModel):
     disaster_id: int
     title: str
     description: str
-    priority: str
     estimated_time: int  # 분 단위
     steps: List[str]
     emergency_contacts: List[str]
@@ -69,9 +68,10 @@ async def generate_action_card(request: ActionCardRequest):
         location = "제주도"  # Mock 위치
         logger.info(f"📍 재난 유형: {disaster_type}, 위치: {location}")
         
-        # 2. 주변 대피소 검색 (Mock - 실제로는 ShelterFinder 사용)
-        shelters = _get_mock_shelters(request.latitude, request.longitude)
-        logger.info(f"🏠 대피소 {len(shelters)}개 검색됨")
+        # 2. 주변 대피소 검색 (재난 유형에 맞는 대피소 필터링)
+        all_shelters = _get_mock_shelters(request.latitude, request.longitude)
+        shelters = _filter_shelters_by_disaster_type(all_shelters, disaster_type)
+        logger.info(f"🏠 {disaster_type}에 적합한 대피소 {len(shelters)}개 검색됨")
         
         # 3. 사용자 프로필
         user_profile = {
@@ -103,7 +103,29 @@ async def generate_action_card(request: ActionCardRequest):
         logger.info(f"✅ Action Card 생성 완료: {action_card.id} (method: {generation_method})")
         return action_card
         
+    except ValueError as e:
+        # LLM 검증 실패
+        logger.error(f"❌ LLM 검증 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"LLM 검증 실패: {str(e)}"
+        )
+    except TimeoutError as e:
+        # LLM 타임아웃
+        logger.error(f"❌ LLM 타임아웃: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=f"LLM 응답 타임아웃: {str(e)}"
+        )
+    except RuntimeError as e:
+        # LLM 서비스 오류
+        logger.error(f"❌ LLM 서비스 오류: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"LLM 서비스 오류: {str(e)}"
+        )
     except Exception as e:
+        # 기타 예외
         logger.error(f"❌ Action Card 생성 실패: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -144,7 +166,49 @@ def _calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
 def _get_disaster_type(disaster_id: int) -> str:
     """재난 ID로부터 재난 유형 조회 (Mock)"""
     # 실제로는 DB에서 조회
-    return "산불"
+    # Mock 매핑 (테스트용)
+    disaster_mapping = {
+        # 55: "산불",
+        14: "지진",
+        2: "해일",
+        8: "전쟁"
+    }
+    return disaster_mapping.get(disaster_id, "지진")  # 기본값: 지진
+
+def _filter_shelters_by_disaster_type(shelters: List[ShelterInfo], disaster_type: str) -> List[ShelterInfo]:
+    """
+    재난 유형에 맞는 대피소만 필터링
+    
+    Args:
+        shelters: 전체 대피소 목록
+        disaster_type: 재난 유형 (지진, 해일, 산불, 전쟁)
+    
+    Returns:
+        재난 유형에 적합한 대피소 목록 (거리 순 정렬)
+    """
+    # 재난 유형과 대피소 유형 매핑
+    disaster_to_shelter_type = {
+        "지진": "지진대피소",
+        "해일": "해일대피소",
+        # "산불": "산불대피소",
+        "전쟁": "전쟁대피소"
+    }
+    
+    required_shelter_type = disaster_to_shelter_type.get(disaster_type)
+    
+    if not required_shelter_type:
+        logger.warning(f"⚠️ 알 수 없는 재난 유형: {disaster_type}. 전체 대피소 반환")
+        return shelters
+    
+    # 재난 유형에 맞는 대피소 필터링
+    filtered = [s for s in shelters if required_shelter_type in s.shelter_type]
+    
+    if not filtered:
+        logger.warning(f"⚠️ {disaster_type}에 적합한 {required_shelter_type}가 없습니다. 전체 대피소 반환")
+        return shelters
+    
+    logger.info(f"✅ {disaster_type} → {required_shelter_type} 필터링: {len(filtered)}개")
+    return filtered
 
 def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
     """
@@ -157,12 +221,12 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
     Returns:
         거리순으로 정렬된 대피소 리스트
     """
-    # Mock 대피소 목록 (제주도 실제 좌표)
+    # Mock 대피소 목록 
     mock_shelters_data = [
         {
             "name": "제주시민회관 대피소",
             "address": "제주시 동광로 20",
-            "shelter_type": "지진해일대피소",
+            "shelter_type": "지진대피소",
             "capacity": 200,
             "latitude": 33.5010,
             "longitude": 126.5314
@@ -170,7 +234,7 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
         {
             "name": "제주도청 비상대피소",
             "address": "제주시 문연로 6",
-            "shelter_type": "민방위대피소",
+            "shelter_type": "산불대피소",
             "capacity": 150,
             "latitude": 33.4890,
             "longitude": 126.5012
@@ -178,7 +242,7 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
         {
             "name": "제주중앙초등학교 대피소",
             "address": "제주시 중앙로 213",
-            "shelter_type": "지진해일대피소",
+            "shelter_type": "해일대피소",
             "capacity": 300,
             "latitude": 33.5120,
             "longitude": 126.5218
@@ -272,16 +336,6 @@ def _build_action_card_response(
     else:
         description = f"{disaster_type} 발생! 즉시 안전한 곳으로 대피하세요."
     
-    # 우선순위 결정
-    priority_map = {
-        "지진": "critical",
-        "화재": "critical",
-        "산불": "high",
-        "태풍": "high",
-        "호우": "medium"
-    }
-    priority = priority_map.get(disaster_type, "high")
-    
     # 예상 소요 시간 (가장 가까운 대피소까지 시간)
     estimated_time = shelters[0].walking_minutes if shelters else 15
     
@@ -290,7 +344,6 @@ def _build_action_card_response(
         disaster_id=request.disaster_id,
         title=title,
         description=description,
-        priority=priority,
         estimated_time=estimated_time,
         steps=steps[:5],  # 최대 5개 단계
         emergency_contacts=["119", "112", "제주도청 064-710-2114"],
@@ -309,7 +362,6 @@ async def get_action_card(card_id: str):
             disaster_id=55,
             title="산불 대피 행동 지침",
             description="건조특보 발효 중 산불 위험이 높습니다.",
-            priority="high",
             estimated_time=15,
             steps=[
                 "현재 위치에서 가장 가까운 대피소로 이동",
@@ -346,7 +398,6 @@ async def get_action_cards(
                 disaster_id=55,
                 title="산불 대피 행동 지침",
                 description="건조특보 발효 중 산불 위험이 높습니다.",
-                priority="high",
                 estimated_time=15,
                 steps=[
                     "현재 위치에서 가장 가까운 대피소로 이동",
