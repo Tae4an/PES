@@ -42,10 +42,10 @@ class LLMService:
             (행동카드 텍스트, 생성 방법: 'llm' 또는 'fallback')
         """
         
-        # 대피소 정보 포맷팅
+        # 대피소 정보 포맷팅 (거리 정보 포함)
         if shelters:
             shelters_text = "\n".join([
-                f"  {i+1}. {s.name} (도보 {s.walking_minutes}분, {s.address})"
+                f"  {i+1}. {s.name} - 거리: {s.distance_km}km, 도보 {s.walking_minutes}분 ({s.address})"
                 for i, s in enumerate(shelters[:3])
             ])
         else:
@@ -137,6 +137,7 @@ class LLMService:
 - 대상 시민: {age_group}{height_info}
 - 이동능력: {mobility}
 - 가장 가까운 대피소: {nearest_shelter}
+- 주변 랜드 마크 정보 : {nearest_shelter}
 - 현재 시각: {current_time}
 
 <필수 준수 규칙> : 이 규칙을 어길 시 국민의 생명에 직접적인 위험이 발생하며, 재난안전법 위반으로 법적 책임을 지게 됩니다.
@@ -145,7 +146,7 @@ class LLMService:
 3. 즉시 실행 가능한 구체적 행동만 포함할 것.
 4. 추측성 표현("아마", "~할 수도", "~것 같습니다", "~일 수 있습니다") 사용 시 즉시 실격.
 5. 불확실한 정보나 검증되지 않은 행동 지침은 절대 포함하지 말 것.
-6. **반드시 100% 순수 한글로만 작성할 것. 영어 단어는 단 한 글자도 사용 금지** (예: "inhalation" → "흡입", "avoid" → "피하다").
+6. 대피소 정보에 포함된 정확한 거리(km 또는 m)와 도보 시간을 반드시 명시할 것
 7. 숫자는 허용됨 (예: "119", "10분").
 8. 불필요한 인사말, 서론, 결론, 부가 설명은 일체 제외하고 핵심 행동만 기술할 것.
 9. 대피소 정보가 제공된 경우 반드시 해당 대피소로의 이동 지침을 첫 번째 또는 두 번째 문장에 포함할 것.
@@ -154,7 +155,10 @@ class LLMService:
 1. 시간 순서대로 행동을 구성 (즉시 → 이동 중 → 대피 후).
 2. 생명 보호가 최우선 - 위험 회피 행동을 가장 먼저 제시.
 3. 구체적인 수치와 명확한 지시어 사용 (예: "10분 이내", "즉시", "절대").
-4. {age_group}과 {mobility} {height}를 고려한 맞춤형 지침 제공.
+4. 개인회된 정보인 {age_group}과 {mobility} {height}를 고려한 맞춤형 지침 제공.
+5. 대피소 정보에 포함된 정확한 거리(km 또는 m)와 도보 시간을 반드시 명시할 것.
+6. {nearest_shelter}로 이동하라는 정보를 첫 번째 또는 두 번째 문장에 꼭 포함할 것.
+7. 모든 행동 지침 문장은 줄바꿈 문장으로 작성할 것.
 
 
 <금지 사항> : 아래 표현이 포함될 경우 행동 지침은 즉시 무효 처리되며 중대한 법적 책임을 집니다.
@@ -253,15 +257,23 @@ class LLMService:
         if shelters:
             shelter_info = shelters[0].name
             walking_time = shelters[0].walking_minutes
+            distance_km = shelters[0].distance_km
             shelter_address = shelters[0].address
+            
+            # 거리 표시 (1km 미만이면 미터로)
+            if distance_km < 1:
+                distance_display = f"{int(distance_km * 1000)}m"
+            else:
+                distance_display = f"{distance_km:.1f}km"
         else:
             shelter_info = "가까운 안전시설"
             walking_time = 5
+            distance_display = "500m"
             shelter_address = "가까운 곳"
         
         templates = {
             "호우": f"""🚨 [호우 경보] 즉시 행동
-- 대피소: {shelter_info} (도보 {walking_time}분)
+- 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 지하 공간, 저지대 즉시 벗어나기
 - 엘리베이터 사용 금지
 - 미끄러운 바닥 주의
@@ -269,38 +281,38 @@ class LLMService:
             
             "지진": f"""🚨 [지진 경보] 즉시 행동
 - 현 위치에서 책상/테이블 아래로 대피
-- 흔들림 멈춘 후 {shelter_info}로 이동 (도보 {walking_time}분)
+- 흔들림 멈춘 후 {shelter_info}로 이동 (거리 {distance_display}, 도보 {walking_time}분)
 - 엘리베이터 절대 사용 금지
 - 낙하물 주의, 건물 외벽에서 멀어지기""",
             
             "태풍": f"""🚨 [태풍 경보] 즉시 행동
-- 실내 대피소: {shelter_info} (도보 {walking_time}분)
+- 실내 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 창문에서 멀어지고 유리창 테이프 부착
 - 외출 자제, 간판·가로수 낙하 주의
 - 차량 침수 위험 지역 통행 금지""",
             
             "화재": f"""🚨 [화재 경보] 즉시 행동
 - 119 신고 후 안전한 곳으로 대피
-- 대피소: {shelter_info} (도보 {walking_time}분)
+- 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 엘리베이터 금지, 계단 이용
 - 낮은 자세로 이동, 젖은 수건으로 코와 입 가리기""",
             
             "산불": f"""🚨 [산불 경보] 즉시 행동
-- 대피소: {shelter_info} (도보 {walking_time}분)
+- 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 산과 반대 방향으로 신속히 대피
 - 젖은 수건으로 코와 입 가리기
 - 연기 발생 시 낮은 자세 유지
 - 119 신고 후 안전 지대로 이동""",
             
             "대설": f"""🚨 [대설 경보] 즉시 행동
-- 실내 대피소: {shelter_info} (도보 {walking_time}분)
+- 실내 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 외출 자제, 불가피 시 대중교통 이용
 - 빙판길 낙상 주의, 보폭 좁게 걷기
 - 차량 체인 장착, 안전거리 확보
 - 고립 대비 식수·식량 비축""",
             
             "강풍": f"""🚨 [강풍 경보] 즉시 행동
-- 실내 대피소: {shelter_info} (도보 {walking_time}분)
+- 실내 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 간판, 가로수 등 낙하물 주의
 - 해안가 접근 절대 금지
 - 창문 닫고 유리창에서 멀어지기
@@ -314,7 +326,7 @@ class LLMService:
         
         # 기본 템플릿
         return f"""🚨 [재난 경보] 즉시 행동
-- 대피소: {shelter_info} (도보 {walking_time}분)
+- 대피소: {shelter_info} (거리 {distance_display}, 도보 {walking_time}분)
 - 안전한 곳으로 즉시 대피
 - 관계 기관의 지시에 따르기
 - 위험 지역 접근 금지"""
