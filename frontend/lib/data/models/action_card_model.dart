@@ -48,9 +48,9 @@ class ActionCardModel {
         location: '제주도', // 기본값
         message: description,
         severity: priority,
-        latitude: 37.3219, // 안산시청 위도
-        longitude: 126.8309, // 안산시청 경도
-        radiusKm: 5.0, // 기본 반경 (안산 시내)
+        latitude: 37.2970, // 한양대 ERICA 캠퍼스 위도
+        longitude: 126.8373, // 한양대 ERICA 캠퍼스 경도
+        radiusKm: 3.0, // 기본 반경 (캠퍼스 주변)
         createdAt: DateTime.parse(createdAt),
         isActive: true,
       ),

@@ -35,9 +35,9 @@ class DisasterModel {
       location: '제주도', // 백엔드 데이터에 위치 정보가 없으므로 기본값
       message: message,
       severity: 'high', // 기본값
-      latitude: 37.3219, // 안산시청 위도
-      longitude: 126.8309, // 안산시청 경도
-      radiusKm: 5.0, // 기본 반경 (안산 시내)
+      latitude: 37.2970, // 한양대 ERICA 캠퍼스 위도
+      longitude: 126.8373, // 한양대 ERICA 캠퍼스 경도
+      radiusKm: 3.0, // 기본 반경 (캠퍼스 주변)
       createdAt: DateTime.parse(issuedAt),
       isActive: true, // 활성 재난으로 간주
     );
