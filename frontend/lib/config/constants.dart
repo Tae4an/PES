@@ -19,9 +19,9 @@ class AppConstants {
   static const Duration receiveTimeout = Duration(seconds: 30);
 
   // 위치 관련
-  static const double defaultLatitude = 37.5665;
-  static const double defaultLongitude = 126.9780;
-  static const double defaultZoom = 14.0;
+  static const double defaultLatitude = 37.2970; // 한양대 ERICA
+  static const double defaultLongitude = 126.8373; // 한양대 ERICA
+  static const double defaultZoom = 15.0; // 마커가 잘 보이도록 조금 더 확대
   static const int maxSheltersToShow = 3;
   static const double shelterSearchRadiusKm = 5.0;
 
