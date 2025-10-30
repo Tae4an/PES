@@ -15,22 +15,11 @@ class MainLayout extends StatelessWidget {
     required this.currentIndex,
   }) : super(key: key);
 
-  bool _shouldShowBottomNav(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    // 로그인, 회원가입, 온보딩, 스플래시에서는 네비게이션 바 숨김
-    return !(location.startsWith('/login') ||
-        location.startsWith('/register') ||
-        location == '/' ||
-        location.startsWith('/onboarding'));
-  }
-
   @override
   Widget build(BuildContext context) {
-    final showNav = _shouldShowBottomNav(context);
     return Scaffold(
       body: child,
-      bottomNavigationBar:
-          showNav ? _buildBottomNavigationBar(context) : null, // ✅ 조건부 렌더링
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
@@ -75,8 +64,9 @@ class MainLayout extends StatelessWidget {
   }
 
   void _onItemTapped(BuildContext context, int index) {
+    // 이전 인덱스 업데이트
     _previousIndex = currentIndex;
-
+    
     switch (index) {
       case 0:
         context.go('/home');
@@ -90,6 +80,8 @@ class MainLayout extends StatelessWidget {
     }
   }
 
+  /// 현재와 이전 인덱스를 비교하여 슬라이드 방향 결정
   static int getPreviousIndex() => _previousIndex;
   static void setPreviousIndex(int index) => _previousIndex = index;
 }
+
