@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import logging
 from datetime import datetime
 from uuid import UUID, uuid4
+import math
 
 from ....services.llm_service import LLMService
 from ...v1.schemas.shelter import ShelterInfo
@@ -22,6 +23,7 @@ class ActionCardRequest(BaseModel):
     longitude: float
     age_group: str
     mobility: str
+    height: Optional[str] = None  # 키 정보 (예: "180cm", "165cm")
 
 # Action Card 응답 모델
 class ActionCardResponse(BaseModel):
@@ -74,7 +76,8 @@ async def generate_action_card(request: ActionCardRequest):
         # 3. 사용자 프로필
         user_profile = {
             "age_group": request.age_group,
-            "mobility": request.mobility
+            "mobility": request.mobility,
+            "height": request.height
         }
         logger.info(f"👤 사용자 프로필: {user_profile}")
         
@@ -107,49 +110,139 @@ async def generate_action_card(request: ActionCardRequest):
             detail=f"Action Card 생성 실패: {str(e)}"
         )
 
+def _calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Haversine 공식을 사용한 두 지점 간 거리 계산 (단위: km)
+    
+    Args:
+        lat1, lon1: 시작 지점 (위도, 경도)
+        lat2, lon2: 도착 지점 (위도, 경도)
+    
+    Returns:
+        거리 (km)
+    """
+    # 지구 반지름 (km)
+    R = 6371.0
+    
+    # 라디안 변환
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+    
+    # 위도/경도 차이
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    
+    # Haversine 공식
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    distance = R * c
+    return distance
+
 def _get_disaster_type(disaster_id: int) -> str:
     """재난 ID로부터 재난 유형 조회 (Mock)"""
     # 실제로는 DB에서 조회
     return "산불"
 
 def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
-    """Mock 대피소 정보 생성"""
-    # 실제로는 ShelterFinder.get_shelters_within_radius() 사용
-    return [
-        ShelterInfo(
-            id=uuid4(),
-            name="제주시민회관 대피소",
-            address="제주시 동광로 20",
-            shelter_type="지진해일대피소",
-            capacity=200,
-            latitude=33.5010,
-            longitude=126.5314,
-            distance_km=0.8,
-            walking_minutes=10
-        ),
-        ShelterInfo(
-            id=uuid4(),
-            name="제주도청 비상대피소",
-            address="제주시 문연로 6",
-            shelter_type="민방위대피소",
-            capacity=150,
-            latitude=33.4890,
-            longitude=126.5012,
-            distance_km=1.2,
-            walking_minutes=15
-        ),
-        ShelterInfo(
-            id=uuid4(),
-            name="제주중앙초등학교 대피소",
-            address="제주시 중앙로 213",
-            shelter_type="지진해일대피소",
-            capacity=300,
-            latitude=33.5120,
-            longitude=126.5218,
-            distance_km=1.5,
-            walking_minutes=18
-        )
+    """
+    사용자 위치 기준으로 Mock 대피소 정보 생성 (실제 거리 계산 포함)
+    
+    Args:
+        latitude: 사용자 위도
+        longitude: 사용자 경도
+    
+    Returns:
+        거리순으로 정렬된 대피소 리스트
+    """
+    # Mock 대피소 목록 (제주도 실제 좌표)
+    mock_shelters_data = [
+        {
+            "name": "제주시민회관 대피소",
+            "address": "제주시 동광로 20",
+            "shelter_type": "지진해일대피소",
+            "capacity": 200,
+            "latitude": 33.5010,
+            "longitude": 126.5314
+        },
+        {
+            "name": "제주도청 비상대피소",
+            "address": "제주시 문연로 6",
+            "shelter_type": "민방위대피소",
+            "capacity": 150,
+            "latitude": 33.4890,
+            "longitude": 126.5012
+        },
+        {
+            "name": "제주중앙초등학교 대피소",
+            "address": "제주시 중앙로 213",
+            "shelter_type": "지진해일대피소",
+            "capacity": 300,
+            "latitude": 33.5120,
+            "longitude": 126.5218
+        },
+        {
+            "name": "제주국제공항 비상대피소",
+            "address": "제주시 공항로 2",
+            "shelter_type": "민방위대피소",
+            "capacity": 500,
+            "latitude": 33.5067,
+            "longitude": 126.4929
+        }
     ]
+    
+    # 각 대피소까지의 실제 거리 계산
+    shelters_with_distance = []
+    for shelter_data in mock_shelters_data:
+        # 사용자 위치에서 대피소까지 거리 계산
+        distance_km = _calculate_distance(
+            latitude, longitude,
+            shelter_data["latitude"], shelter_data["longitude"]
+        )
+        
+        # 도보 시간 계산 (평균 도보 속도: 4km/h)
+        walking_minutes = int(distance_km * 15)  # 1km당 약 15분
+        
+        # 거리를 미터 단위로도 표시 (1km 미만일 경우)
+        if distance_km < 1:
+            distance_meters = int(distance_km * 1000)
+            distance_display = f"{distance_meters}m"
+        else:
+            distance_display = f"{distance_km:.1f}km"
+        
+        shelters_with_distance.append({
+            "data": shelter_data,
+            "distance_km": distance_km,
+            "distance_display": distance_display,
+            "walking_minutes": max(walking_minutes, 1)  # 최소 1분
+        })
+    
+    # 거리순으로 정렬
+    shelters_with_distance.sort(key=lambda x: x["distance_km"])
+    
+    # ShelterInfo 객체로 변환
+    result = []
+    for item in shelters_with_distance[:3]:  # 가장 가까운 3개만
+        shelter_data = item["data"]
+        result.append(
+            ShelterInfo(
+                id=uuid4(),
+                name=shelter_data["name"],
+                address=shelter_data["address"],
+                shelter_type=shelter_data["shelter_type"],
+                capacity=shelter_data["capacity"],
+                latitude=shelter_data["latitude"],
+                longitude=shelter_data["longitude"],
+                distance_km=round(item["distance_km"], 2),
+                walking_minutes=item["walking_minutes"]
+            )
+        )
+    
+    logger.info(f"📍 사용자 위치 ({latitude}, {longitude})에서 가장 가까운 대피소: {result[0].name} ({result[0].distance_km}km, 도보 {result[0].walking_minutes}분)")
+    
+    return result
 
 def _build_action_card_response(
     request: ActionCardRequest,
