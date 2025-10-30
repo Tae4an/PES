@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:go_router/go_router.dart';
 import '../../config/constants.dart';
 import '../../domain/entities/user_profile.dart';
 import '../providers/user_provider.dart';
+import '../providers/training_user_provider.dart';
 import '../widgets/main_layout.dart';
+import '../../core/utils/logger.dart';
 
 /// 설정 화면
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -179,6 +183,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: _saveSettings,
                   icon: const Icon(Icons.save),
                   label: const Text('설정 저장', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              /// 🚪 로그아웃 버튼
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('로그아웃'),
+                        content: const Text('정말 로그아웃 하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('로그아웃'),
+                          ),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirmed == true && mounted) {
+                      final trainingUserProvider = provider.Provider.of<TrainingUserProvider>(context, listen: false);
+                      await trainingUserProvider.logout();
+                      AppLogger.i('로그아웃 완료');
+                      if (mounted) {
+                        context.go('/login');
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.logout),
+                  label: const Text('로그아웃', style: TextStyle(fontSize: 18)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: Colors.red,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

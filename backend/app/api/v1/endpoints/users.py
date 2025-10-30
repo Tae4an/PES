@@ -24,6 +24,19 @@ class RegisterOrLoginRequest(BaseModel):
     device_id: str
     fcm_token: Optional[str] = None
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class LoginResponse(BaseModel):
+    user_id: str
+    username: str
+    nickname: str
+    age_group: Optional[str]
+    mobility: str
+    total_points: int
+    message: str
+
 
 class RegisterOrLoginResponse(BaseModel):
     user_id: str
@@ -135,6 +148,61 @@ async def register_or_login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"로그인 처리 실패: {str(e)}"
+        )
+
+
+@router.post("/login", response_model=LoginResponse)
+async def login(
+    request: LoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    간단한 ID/PW 로그인
+    """
+    try:
+        # 사용자 찾기
+        query = select(User).where(
+            User.username == request.username,
+            User.password == request.password
+        )
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="아이디 또는 비밀번호가 잘못되었습니다"
+            )
+        
+        # 포인트 조회
+        points_query = select(UserPoints).where(UserPoints.user_id == user.id)
+        points_result = await db.execute(points_query)
+        points = points_result.scalar_one_or_none()
+        
+        if not points:
+            points = UserPoints(user_id=user.id, total_points=0)
+            db.add(points)
+            await db.commit()
+        
+        logger.info(f"로그인 성공: username={request.username}, user_id={user.id}")
+        
+        return LoginResponse(
+            user_id=str(user.id),
+            username=user.username,
+            nickname=user.nickname or "익명",
+            age_group=user.age_group,
+            mobility=user.mobility or "정상",
+            total_points=points.total_points,
+            message="로그인 성공"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in login: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"로그인 실패: {str(e)}"
         )
 
 
