@@ -232,11 +232,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         );
       }
-      
+
       // 디버그: 마커 수 출력
       print('🗺️ 마커 업데이트 완료: ${_markers.length}개');
       print('📍 현재 위치: ${currentLocation.latitude}, ${currentLocation.longitude}');
       print('🏫 한양대 ERICA: 37.2970, 126.8373');
+      print('📌 마커 상세:');
+      for (var marker in _markers) {
+        print('   - ${marker.markerId.value}: (${marker.position.latitude}, ${marker.position.longitude})');
+      }
     });
   }
 
