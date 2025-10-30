@@ -3,20 +3,24 @@
 """
 from pydantic import BaseModel, Field
 from typing import Optional
-from uuid import UUID
+from enum import Enum
 
+class DisasterType(str, Enum):
+    """재난 유형"""
+    CIVIL_DEFENSE = "민방위"
+    EARTHQUAKE = "지진"
+    TSUNAMI = "해일"
+    OTHER = "기타"
 
 class ShelterInfo(BaseModel):
-    """대피소 정보"""
-    id: UUID
+    """대피소 정보 (간소화)"""
     name: str
     address: str
     shelter_type: str
-    capacity: Optional[int]
     distance_km: Optional[float] = Field(None, description="사용자로부터의 거리 (km)")
     walking_minutes: Optional[int] = Field(None, description="도보 소요 시간 (분)")
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float
+    longitude: float
     
     class Config:
         from_attributes = True
@@ -35,4 +39,10 @@ class ShelterSearchResponse(BaseModel):
     shelters: list[ShelterInfo]
     total_count: int
     search_radius_km: float
-
+    
+class DisasterShelterSearchResponse(BaseModel):
+    """재난 유형별 대피소 검색 응답"""
+    disaster_type: str
+    shelters: list[ShelterInfo]
+    total_count: int
+    search_radius_km: float

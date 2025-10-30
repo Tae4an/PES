@@ -1,14 +1,11 @@
 """
-PostGIS 기반 대피소 검색 서비스
+대피소 검색 서비스 (latitude/longitude 기반)
 """
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from geoalchemy2.functions import ST_DWithin, ST_Distance, ST_MakePoint
-from geoalchemy2.elements import WKTElement
+from sqlalchemy import text
 import logging
 
-from ..models.shelter import Shelter
 from ..api.v1.schemas.shelter import ShelterInfo
 from ..core.config import settings
 
@@ -18,9 +15,17 @@ logger = logging.getLogger(__name__)
 class ShelterFinder:
     """대피소 검색 서비스"""
     
+    # 재난 유형과 대피소 유형 매핑
+    DISASTER_TO_SHELTER_TYPE = {
+        "민방위": "민방위대피소",
+        "지진": "지진대피소",
+        "해일": "해일대피소",
+        "기타": "기타대피소"
+    }
+    
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.walking_speed_km_per_hour = settings.WALKING_SPEED_KM_PER_HOUR
+        self.walking_speed_km_per_hour = settings.WALKING_SPEED_KM_PER_HOUR if hasattr(settings, 'WALKING_SPEED_KM_PER_HOUR') else 4.0
     
     async def get_shelters_within_radius(
         self,
@@ -30,7 +35,7 @@ class ShelterFinder:
         limit: int = 3
     ) -> List[ShelterInfo]:
         """
-        사용자 위치 반경 내 대피소 검색
+        사용자 위치 반경 내 대피소 검색 (Haversine 공식 사용)
         
         Args:
             latitude: 사용자 위도
@@ -42,29 +47,38 @@ class ShelterFinder:
             대피소 정보 리스트 (거리 순 정렬)
         """
         try:
-            # 사용자 위치 포인트 생성 (SRID 4326)
-            user_point = f'SRID=4326;POINT({longitude} {latitude})'
+            logger.info(f"Searching shelters: lat={latitude}, lng={longitude}, radius={radius_km}km, limit={limit}")
             
-            # PostGIS 쿼리
+            # 서브쿼리를 사용하여 거리 계산 후 필터링
             query = text("""
                 SELECT 
-                    id,
                     name,
                     address,
                     shelter_type,
-                    capacity,
-                    ST_Y(location::geometry) as latitude,
-                    ST_X(location::geometry) as longitude,
-                    ST_Distance(
-                        location::geography,
-                        ST_GeogFromText(:user_point)
-                    ) / 1000.0 as distance_km
-                FROM shelters
-                WHERE ST_DWithin(
-                    location::geography,
-                    ST_GeogFromText(:user_point),
-                    :radius_meters
-                )
+                    latitude,
+                    longitude,
+                    distance_km
+                FROM (
+                    SELECT 
+                        name,
+                        address,
+                        shelter_type,
+                        latitude,
+                        longitude,
+                        (
+                            6371 * acos(
+                                LEAST(1.0, 
+                                    cos(radians(:user_lat)) * cos(radians(latitude)) *
+                                    cos(radians(longitude) - radians(:user_lng)) +
+                                    sin(radians(:user_lat)) * sin(radians(latitude))
+                                )
+                            )
+                        ) AS distance_km
+                    FROM shelters
+                    WHERE latitude IS NOT NULL
+                      AND longitude IS NOT NULL
+                ) AS shelter_distances
+                WHERE distance_km <= :radius_km
                 ORDER BY distance_km ASC
                 LIMIT :limit
             """)
@@ -72,13 +86,15 @@ class ShelterFinder:
             result = await self.db.execute(
                 query,
                 {
-                    "user_point": user_point,
-                    "radius_meters": radius_km * 1000,
+                    "user_lat": latitude,
+                    "user_lng": longitude,
+                    "radius_km": radius_km,
                     "limit": limit
                 }
             )
             
             rows = result.fetchall()
+            logger.info(f"Query returned {len(rows)} rows")
             
             shelters = []
             for row in rows:
@@ -86,11 +102,9 @@ class ShelterFinder:
                 walking_minutes = self._calculate_walking_time(distance_km)
                 
                 shelter = ShelterInfo(
-                    id=row.id,
                     name=row.name,
                     address=row.address,
                     shelter_type=row.shelter_type,
-                    capacity=row.capacity,
                     latitude=float(row.latitude),
                     longitude=float(row.longitude),
                     distance_km=round(distance_km, 2),
@@ -103,6 +117,113 @@ class ShelterFinder:
             
         except Exception as e:
             logger.error(f"Error searching shelters: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    async def get_shelters_by_disaster_type(
+        self,
+        disaster_type: str,
+        latitude: float,
+        longitude: float,
+        radius_km: float = 10.0,
+        limit: int = 5
+    ) -> List[ShelterInfo]:
+        """
+        재난 유형별 대피소 검색
+        
+        Args:
+            disaster_type: 재난 유형 (민방위, 지진, 해일, 기타)
+            latitude: 사용자 위도
+            longitude: 사용자 경도
+            radius_km: 검색 반경 (km)
+            limit: 최대 결과 수
+        
+        Returns:
+            해당 재난 유형의 대피소 리스트 (거리 순 정렬)
+        """
+        try:
+            # 재난 유형을 대피소 유형으로 변환
+            shelter_type = self.DISASTER_TO_SHELTER_TYPE.get(disaster_type)
+            
+            if not shelter_type:
+                logger.warning(f"Unknown disaster type: {disaster_type}")
+                return []
+            
+            logger.info(f"Searching {disaster_type} shelters: lat={latitude}, lng={longitude}, radius={radius_km}km, limit={limit}")
+            
+            # shelter_type에 공백이 포함될 수 있으므로 TRIM 및 LIKE 사용
+            query = text("""
+                SELECT 
+                    name,
+                    address,
+                    shelter_type,
+                    latitude,
+                    longitude,
+                    distance_km
+                FROM (
+                    SELECT 
+                        name,
+                        address,
+                        shelter_type,
+                        latitude,
+                        longitude,
+                        (
+                            6371 * acos(
+                                LEAST(1.0, 
+                                    cos(radians(:user_lat)) * cos(radians(latitude)) *
+                                    cos(radians(longitude) - radians(:user_lng)) +
+                                    sin(radians(:user_lat)) * sin(radians(latitude))
+                                )
+                            )
+                        ) AS distance_km
+                    FROM shelters
+                    WHERE latitude IS NOT NULL
+                      AND longitude IS NOT NULL
+                      AND TRIM(shelter_type) LIKE :shelter_type_pattern
+                ) AS shelter_distances
+                WHERE distance_km <= :radius_km
+                ORDER BY distance_km ASC
+                LIMIT :limit
+            """)
+            
+            result = await self.db.execute(
+                query,
+                {
+                    "user_lat": latitude,
+                    "user_lng": longitude,
+                    "shelter_type_pattern": f"%{shelter_type}%",
+                    "radius_km": radius_km,
+                    "limit": limit
+                }
+            )
+            
+            rows = result.fetchall()
+            logger.info(f"Query returned {len(rows)} rows for disaster type '{disaster_type}'")
+            
+            shelters = []
+            for row in rows:
+                distance_km = float(row.distance_km)
+                walking_minutes = self._calculate_walking_time(distance_km)
+                
+                shelter = ShelterInfo(
+                    name=row.name,
+                    address=row.address,
+                    shelter_type=row.shelter_type.strip(),
+                    latitude=float(row.latitude),
+                    longitude=float(row.longitude),
+                    distance_km=round(distance_km, 2),
+                    walking_minutes=walking_minutes
+                )
+                shelters.append(shelter)
+            
+            logger.info(f"Found {len(shelters)} {disaster_type} shelters within {radius_km}km")
+            return shelters
+            
+        except Exception as e:
+            logger.error(f"Error searching shelters by disaster type: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def _calculate_walking_time(self, distance_km: float) -> int:
@@ -119,45 +240,82 @@ class ShelterFinder:
         minutes = int(hours * 60)
         return max(1, minutes)  # 최소 1분
     
-    async def check_user_in_disaster_zone(
+    async def get_shelters_by_type_and_location(
         self,
-        user_lat: float,
-        user_lng: float,
-        disaster_polygon_wkt: str
-    ) -> bool:
+        shelter_type: str,
+        latitude: float,
+        longitude: float,
+        offset: int = 0,
+        limit: int = 20
+    ) -> List[ShelterInfo]:
         """
-        사용자가 재난 지역 내에 있는지 판정
+        대피소 유형 + 거리순 검색
         
         Args:
-            user_lat: 사용자 위도
-            user_lng: 사용자 경도
-            disaster_polygon_wkt: 재난 지역 폴리곤 (WKT 형식)
+            shelter_type: 대피소 유형
+            latitude: 위도
+            longitude: 경도
+            offset: 오프셋
+            limit: 최대 결과 수
         
         Returns:
-            교차 여부
+            거리순으로 정렬된 대피소 목록
         """
         try:
-            user_point = f'SRID=4326;POINT({user_lng} {user_lat})'
-            
             query = text("""
-                SELECT ST_Intersects(
-                    ST_GeogFromText(:user_point),
-                    ST_GeogFromText(:disaster_polygon)
-                ) as intersects
+                SELECT 
+                    name,
+                    address,
+                    shelter_type,
+                    latitude,
+                    longitude,
+                    (
+                        6371 * acos(
+                            LEAST(1.0,
+                                cos(radians(:lat)) * cos(radians(latitude)) *
+                                cos(radians(longitude) - radians(:lng)) +
+                                sin(radians(:lat)) * sin(radians(latitude))
+                            )
+                        )
+                    ) AS distance_km
+                FROM shelters
+                WHERE TRIM(shelter_type) = :shelter_type
+                  AND latitude IS NOT NULL
+                  AND longitude IS NOT NULL
+                ORDER BY distance_km
+                OFFSET :offset
+                LIMIT :limit
             """)
             
             result = await self.db.execute(
                 query,
                 {
-                    "user_point": user_point,
-                    "disaster_polygon": disaster_polygon_wkt
+                    "lat": latitude,
+                    "lng": longitude,
+                    "shelter_type": shelter_type,
+                    "offset": offset,
+                    "limit": limit
                 }
             )
             
-            row = result.fetchone()
-            return bool(row.intersects) if row else False
+            shelters = []
+            for row in result.fetchall():
+                distance_km = float(row.distance_km)
+                walking_minutes = self._calculate_walking_time(distance_km)
+                
+                shelter = ShelterInfo(
+                    name=row.name,
+                    address=row.address,
+                    shelter_type=row.shelter_type.strip(),
+                    latitude=float(row.latitude),
+                    longitude=float(row.longitude),
+                    distance_km=round(distance_km, 2),
+                    walking_minutes=walking_minutes
+                )
+                shelters.append(shelter)
+            
+            return shelters
             
         except Exception as e:
-            logger.error(f"Error checking disaster zone intersection: {str(e)}")
-            return False
-
+            logger.error(f"Error finding shelters by type and location: {e}")
+            return []
