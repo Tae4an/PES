@@ -13,7 +13,7 @@ class ActionCardModel {
   final int disasterId;
   final String title;
   final String description;
-  final String priority;
+  final String? priority;
   @JsonKey(name: 'estimated_time')
   final int estimatedTime;
   final List<String> steps;
@@ -27,7 +27,7 @@ class ActionCardModel {
     required this.disasterId,
     required this.title,
     required this.description,
-    required this.priority,
+    this.priority,
     required this.estimatedTime,
     required this.steps,
     required this.emergencyContacts,
@@ -47,7 +47,7 @@ class ActionCardModel {
         type: '재난', // 기본값
         location: '경기도 안산시', // 안산시 기본값
         message: description,
-        severity: priority,
+        severity: priority ?? 'high',
         latitude: 37.2970, // 한양대 ERICA 캠퍼스 위도
         longitude: 126.8373, // 한양대 ERICA 캠퍼스 경도
         radiusKm: 3.0, // 기본 반경 (캠퍼스 주변)
@@ -77,4 +77,3 @@ class ActionCardModel {
     );
   }
 }
-
