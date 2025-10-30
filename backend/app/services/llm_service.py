@@ -39,7 +39,7 @@ class LLMService:
     def _load_user_health_data(self, user_id: str) -> Dict:
         """사용자 건강 정보 JSON 파일 로드"""
         try:
-            health_file = Path(__file__).parent.parent / "metadata" / "user_health_data.json"
+            health_file = Path(__file__).parent.parent / "data" / "user_health_data.json"
             with open(health_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 users = data.get('users', [])
@@ -52,25 +52,28 @@ class LLMService:
             return {}
     
     def _get_health_specific_advice(self, condition: str, medications: List[str], disaster_type: str) -> str:
-        """질환별 재난 상황 맞춤형 약물/장비 권고사항 생성"""
+        """질환별 재난 상황 맞춤형 필수 물품 권고사항 생성"""
         
-        # 질환별 필수 챙겨야 할 것들
-        health_advice_map = {
-            "고혈압": "혈압약과 혈압계를 꼭 챙기",
-            "당뇨병": "인슐린과 혈당측정기를 꼭 챙기",
-            "천식": "흡입기(네뷸라이저)를 꼭 챙기",
-            "간질": "항경련제를 꼭 챙기",
-            "심장병": "니트로글리세린과 심장약을 꼭 챙기",
-            "파킨슨병": "파킨슨병 약과 보행보조기를 꼭 챙기"
+        # 질환별 필수 물품 (일반적인 용어 사용, 구체적인 약명 제외)
+        health_items_map = {
+            "고혈압": "혈압약, 혈압계",
+            "당뇨병": "당뇨약, 혈당측정기",
+            "천식": "천식약(흡입기)",
+            "간질": "간질약",
+            "심장병": "심장약",
+            "파킨슨병": "파킨슨병약, 보행보조기"
         }
         
-        advice_template = health_advice_map.get(condition)
-        if advice_template:
-            return advice_template
+        items = health_items_map.get(condition)
+        if items:
+            return f"{items} 챙기"
         
         # 기본 권고사항 (질환이 매핑에 없는 경우)
         if medications:
-            return f"필수 약물({medications[0]})을 꼭 챙기십시오"
+            # medications는 리스트 형태
+            if isinstance(medications, list) and len(medications) > 0:
+                # 구체적인 약명 대신 "복용 중인 약"으로 표현
+                return "복용 중인 약 챙기"
         
         return ""
     
@@ -277,18 +280,22 @@ class LLMService:
         
         # 건강 정보 유무에 따라 프롬프트 다르게 생성
         if has_health_info:
-            prompt = f"""[INST]정확히 아래 2개 문장만 작성:
+            prompt = f"""[INST]다음 내용을 번호나 레이블 없이 2개 문장으로만 작성하세요:
 
-첫 번째 문장: {shelter_name}({landmark_name} 방향)로 {distance} 이동하십시오.
-두 번째 문장: {health_precaution}십시오.
+첫 번째: {shelter_name}({landmark_name} 방향)로 {distance} 이동하십시오.
+두 번째: {health_precaution}십시오.
 
-다른 문장 추가 금지. 위 2개 문장만 작성:[/INST]"""
+[출력 예시]
+{shelter_name}({landmark_name} 방향)로 {distance} 이동하십시오.
+{health_precaution}십시오.
+
+위 형식 그대로 출력하세요:[/INST]"""
         else:
-            prompt = f"""[INST]정확히 이 문장만 작성:
+            prompt = f"""[INST]다음 문장만 그대로 출력하세요:
 
 {shelter_name}({landmark_name} 방향)로 {distance} 이동하십시오.
 
-다른 문장 추가 금지. 위 문장만 그대로 작성:[/INST]"""
+다른 내용 추가 금지:[/INST]"""
         
         return prompt
     
