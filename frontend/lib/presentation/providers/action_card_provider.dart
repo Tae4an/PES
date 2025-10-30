@@ -1,8 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/action_card.dart';
+import '../../domain/repositories/disaster_repository.dart';
 import 'disaster_provider.dart';
 import 'user_provider.dart';
 import 'location_provider.dart';
+
+/// Action Card Repository Provider
+final actionCardRepositoryProvider = Provider<DisasterRepository>((ref) {
+  return ref.watch(disasterRepositoryProvider);
+});
 
 /// 행동 카드 생성 Provider
 final actionCardProvider =
@@ -45,6 +51,45 @@ final currentActionCardProvider = FutureProvider<ActionCard?>((ref) async {
     mobility: userProfile?.mobility ?? 'normal',
   );
 });
+
+/// 테스트 모드용 수동 액션 카드 Provider
+final testActionCardProvider = StateNotifierProvider<TestActionCardNotifier, AsyncValue<ActionCard?>>((ref) {
+  return TestActionCardNotifier();
+});
+
+class TestActionCardNotifier extends StateNotifier<AsyncValue<ActionCard?>> {
+  TestActionCardNotifier() : super(const AsyncValue.data(null));
+
+  /// 액션 카드 수동 생성
+  Future<void> generateCard(
+    DisasterRepository repository,
+    int disasterId,
+    double latitude,
+    double longitude,
+    String ageGroup,
+    String mobility,
+  ) async {
+    state = const AsyncValue.loading();
+    
+    try {
+      final card = await repository.generateActionCard(
+        disasterId: disasterId,
+        latitude: latitude,
+        longitude: longitude,
+        ageGroup: ageGroup,
+        mobility: mobility,
+      );
+      state = AsyncValue.data(card);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// 초기화
+  void clear() {
+    state = const AsyncValue.data(null);
+  }
+}
 
 class _ActionCardParams {
   final int disasterId;

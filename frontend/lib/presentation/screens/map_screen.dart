@@ -32,132 +32,147 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           title: const Text('지도'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.my_location),
-              onPressed: () {
-                locationAsync.whenData((location) {
-                  if (location != null) {
-                    _mapController?.animateCamera(
-                      CameraUpdate.newLatLngZoom(
-                        LatLng(location.latitude, location.longitude),
-                        AppConstants.defaultZoom,
-                      ),
-                    );
-                  }
-                });
-              },
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _refreshAndCenter(),
             ),
           ],
         ),
-      body: locationAsync.when(
-        data: (location) {
-          if (location == null) {
-            return const Center(
-              child: Text('위치 정보를 가져올 수 없습니다'),
-            );
-          }
-
-          final currentLatLng = LatLng(location.latitude, location.longitude);
-
-          // 대피소 정보 가져오기
-          final sheltersAsync = ref.watch(
-            nearestSheltersProvider(NearestSheltersParams(
-              latitude: location.latitude,
-              longitude: location.longitude,
-              limit: 20,
-            )),
-          );
-
-          sheltersAsync.whenData((shelters) {
-            _updateMarkers(currentLatLng, shelters);
-          });
-
-          // 재난 위험 지역 표시
-          activeDisastersAsync.whenData((disasters) {
-            if (disasters.isNotEmpty) {
-              _updateDisasterCircle(disasters.first);
+        body: locationAsync.when(
+          data: (location) {
+            if (location == null) {
+              return const Center(
+                child: Text('위치 정보를 가져올 수 없습니다'),
+              );
             }
-          });
 
-          return Column(
-            children: [
-              // 상단 여백 - 현재 위치 정보 (화면의 15%)
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.15,
-                child: Container(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '현재 위치',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '마지막 업데이트: 방금 전',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.grey,
+            final currentLatLng = LatLng(location.latitude, location.longitude);
+
+            // 대피소 정보 가져오기
+            final sheltersAsync = ref.watch(
+              nearestSheltersProvider(NearestSheltersParams(
+                latitude: location.latitude,
+                longitude: location.longitude,
+                limit: 20,
+              )),
+            );
+
+            sheltersAsync.whenData((shelters) {
+              _updateMarkers(currentLatLng, shelters);
+            });
+
+            // 재난 위험 지역 표시
+            activeDisastersAsync.whenData((disasters) {
+              if (disasters.isNotEmpty) {
+                _updateDisasterCircle(disasters.first);
+              }
+            });
+
+            return Column(
+              children: [
+                // 현재 위치 정보 (가용 높이의 15%)
+                Expanded(
+                  flex: 15,
+                  child: Container(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              '현재 위치',
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '마지막 업데이트: 방금 전',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.grey,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // 지도 영역 (가용 높이의 45%)
+                Expanded(
+                  flex: 45,
+                  child: Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: currentLatLng,
+                          zoom: AppConstants.defaultZoom,
+                        ),
+                        markers: _markers,
+                        circles: _circles,
+                        onMapCreated: (controller) {
+                          _mapController = controller;
+                        },
+                        myLocationEnabled: true,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: true,
+                        onTap: (latLng) {
+                          // 지도 탭 시 마커 정보 닫기
+                        },
+                      ),
+                      // 줌 컨트롤 버튼
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _ZoomCircleButton(
+                                icon: Icons.add,
+                                onPressed: _zoomIn,
+                              ),
+                              const SizedBox(height: 10),
+                              _ZoomCircleButton(
+                                icon: Icons.remove,
+                                onPressed: _zoomOut,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              // 지도 영역 (화면의 30%)
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.3,
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: currentLatLng,
-                    zoom: AppConstants.defaultZoom,
-                  ),
-                  markers: _markers,
-                  circles: _circles,
-                  onMapCreated: (controller) {
-                    _mapController = controller;
-                  },
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: true,
-                  mapToolbarEnabled: true,
-                  onTap: (latLng) {
-                    // 지도 탭 시 마커 정보 닫기
-                  },
-                ),
-              ),
-              // 대피소 목록 영역 (55%)
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.55,
-                child: Container(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: const Center(
-                    child: Text('대피소 목록이 여기 표시됩니다'),
+                // 대피소 목록 영역 (가용 높이의 40%)
+                Expanded(
+                  flex: 40,
+                  child: Container(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: const Center(
+                      child: Text('대피소 목록이 여기 표시됩니다'),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
+              ],
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          error: (e, st) => Center(
+            child: Text('오류: $e'),
+          ),
         ),
-        error: (e, st) => Center(
-          child: Text('오류: $e'),
-        ),
-      ),
       ),
     );
   }
@@ -273,10 +288,82 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  /// 위치 새로고침 및 카메라 중앙 이동
+  Future<void> _refreshAndCenter() async {
+    // 위치 정보 새로고침
+    ref.invalidate(currentLocationProvider);
+
+    // 새 위치 정보 가져오기
+    final location = await ref.read(currentLocationProvider.future);
+    if (location != null && _mapController != null) {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(location.latitude, location.longitude),
+          AppConstants.defaultZoom,
+        ),
+      );
+    }
+  }
+
+  /// 지도 확대
+  Future<void> _zoomIn() async {
+    if (_mapController != null) {
+      await _mapController!.animateCamera(CameraUpdate.zoomIn());
+    }
+  }
+
+  /// 지도 축소
+  Future<void> _zoomOut() async {
+    if (_mapController != null) {
+      await _mapController!.animateCamera(CameraUpdate.zoomOut());
+    }
+  }
+
   @override
   void dispose() {
     _mapController?.dispose();
     super.dispose();
+  }
+}
+
+/// 원형 줌 버튼 위젯
+class _ZoomCircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _ZoomCircleButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 4,
+      borderRadius: BorderRadius.circular(30),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 24,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ),
+    );
   }
 }
 
