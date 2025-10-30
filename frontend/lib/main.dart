@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart' as provider;
+import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
 import 'config/theme.dart';
 import 'config/router_config.dart';

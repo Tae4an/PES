@@ -69,6 +69,12 @@ class AppRouter {
     initialLocation: '/login', // ✅ 앱 시작 시 로그인 화면부터 시작
     debugLogDiagnostics: true,
     routes: [
+      // ✅ 루트 경로 (홈으로 리다이렉트)
+      GoRoute(
+        path: '/',
+        redirect: (context, state) => '/home',
+      ),
+      
       // ✅ 로그인 화면
       GoRoute(
         path: '/login',
