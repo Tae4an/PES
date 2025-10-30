@@ -15,7 +15,7 @@ class TrainingApiService {
     String? fcmToken,
   }) async {
     final response = await _dio.post(
-      '/users/register-or-login',
+      '/api/v1/users/register-or-login',
       data: {
         'device_id': deviceId,
         if (fcmToken != null) 'fcm_token': fcmToken,
@@ -26,7 +26,7 @@ class TrainingApiService {
 
   /// 내 정보 조회
   Future<Map<String, dynamic>> getMyInfo(String deviceId) async {
-    final response = await _dio.get('/users/me/$deviceId');
+    final response = await _dio.get('/api/v1/users/me/$deviceId');
     return response.data;
   }
 
@@ -38,7 +38,7 @@ class TrainingApiService {
     String? mobility,
   }) async {
     await _dio.put(
-      '/users/profile',
+      '/api/v1/users/profile',
       data: {
         'device_id': deviceId,
         if (nickname != null) 'nickname': nickname,
@@ -57,7 +57,7 @@ class TrainingApiService {
     int limit = 5,
   }) async {
     final response = await _dio.get(
-      '/training/nearby-shelters',
+      '/api/v1/training/nearby-shelters',
       queryParameters: {
         'latitude': latitude,
         'longitude': longitude,
@@ -75,7 +75,7 @@ class TrainingApiService {
     required double longitude,
   }) async {
     final response = await _dio.post(
-      '/training/start',
+      '/api/v1/training/start',
       data: {
         'device_id': deviceId,
         'shelter_id': shelterId,
@@ -93,7 +93,7 @@ class TrainingApiService {
     required double longitude,
   }) async {
     final response = await _dio.post(
-      '/training/check',
+      '/api/v1/training/check',
       data: {
         'session_id': sessionId,
         'latitude': latitude,
@@ -105,26 +105,26 @@ class TrainingApiService {
 
   /// 훈련 기록 조회
   Future<List<dynamic>> getTrainingHistory(String deviceId) async {
-    final response = await _dio.get('/training/history/$deviceId');
+    final response = await _dio.get('/api/v1/training/history/$deviceId');
     return response.data['history'];
   }
 
   /// 훈련 포기
   Future<void> abandonTraining(int sessionId) async {
-    await _dio.post('/training/abandon/$sessionId');
+    await _dio.post('/api/v1/training/abandon/$sessionId');
   }
 
   // ===== Rewards API =====
   
   /// 보상 목록 조회
   Future<List<dynamic>> getRewardsList() async {
-    final response = await _dio.get('/rewards/list');
+    final response = await _dio.get('/api/v1/rewards/list');
     return response.data['rewards'];
   }
 
   /// 포인트 조회
   Future<Map<String, dynamic>> getPointsBalance(String deviceId) async {
-    final response = await _dio.get('/rewards/points/$deviceId');
+    final response = await _dio.get('/api/v1/rewards/points/$deviceId');
     return response.data;
   }
 
@@ -134,7 +134,7 @@ class TrainingApiService {
     required String rewardId,
   }) async {
     final response = await _dio.post(
-      '/rewards/redeem',
+      '/api/v1/rewards/redeem',
       data: {
         'device_id': deviceId,
         'reward_id': rewardId,
@@ -145,7 +145,7 @@ class TrainingApiService {
 
   /// 내 교환 코드 조회
   Future<List<dynamic>> getMyCodes(String deviceId) async {
-    final response = await _dio.get('/rewards/my-codes/$deviceId');
+    final response = await _dio.get('/api/v1/rewards/my-codes/$deviceId');
     return response.data['codes'];
   }
 }

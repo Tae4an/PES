@@ -10,11 +10,12 @@ from pydantic import BaseModel
 import logging
 from math import radians, sin, cos, sqrt, atan2
 
-from ....db.session import get_db
+from ....db.session import get_db, get_shelter_db
 from ....models.user import User
 from ....models.shelter import Shelter
 from ....models.training import TrainingSession, UserPoints
 from ....core.constants import TRAINING_COMPLETION_POINTS, COMPLETION_DISTANCE_METERS
+from ....services.shelter_finder import ShelterFinder
 
 logger = logging.getLogger(__name__)
 
@@ -105,33 +106,60 @@ async def get_nearby_shelters(
     latitude: float = Query(..., description="현재 위도"),
     longitude: float = Query(..., description="현재 경도"),
     limit: int = Query(5, ge=1, le=10, description="반환할 대피소 수"),
-    db: AsyncSession = Depends(get_db)
+    shelter_db: AsyncSession = Depends(get_shelter_db)
 ):
     """
     현재 위치 기반 가까운 대피소 조회
     
-    PostGIS를 사용하여 거리 순으로 정렬된 대피소 목록을 반환합니다.
+    ID를 포함한 대피소 정보를 반환합니다.
     """
     try:
-        # PostGIS를 사용한 거리 계산 쿼리
-        query = text(f"""
+        # ID를 포함한 쿼리
+        query = text("""
             SELECT 
                 id,
                 name,
                 address,
                 shelter_type,
-                ST_Y(location::geometry) as latitude,
-                ST_X(location::geometry) as longitude,
-                ST_Distance(
-                    location,
-                    ST_GeogFromText('SRID=4326;POINT({longitude} {latitude})')
-                ) as distance
-            FROM shelters
-            ORDER BY distance
+                latitude,
+                longitude,
+                distance_km
+            FROM (
+                SELECT 
+                    id,
+                    name,
+                    address,
+                    shelter_type,
+                    latitude,
+                    longitude,
+                    (
+                        6371 * acos(
+                            LEAST(1.0, 
+                                cos(radians(:user_lat)) * cos(radians(latitude)) *
+                                cos(radians(longitude) - radians(:user_lng)) +
+                                sin(radians(:user_lat)) * sin(radians(latitude))
+                            )
+                        )
+                    ) AS distance_km
+                FROM shelters
+                WHERE latitude IS NOT NULL
+                  AND longitude IS NOT NULL
+            ) AS shelter_distances
+            WHERE distance_km <= :radius_km
+            ORDER BY distance_km ASC
             LIMIT :limit
         """)
         
-        result = await db.execute(query, {"limit": limit})
+        result = await shelter_db.execute(
+            query,
+            {
+                "user_lat": latitude,
+                "user_lng": longitude,
+                "radius_km": 10.0,
+                "limit": limit
+            }
+        )
+        
         rows = result.fetchall()
         
         shelters = []
@@ -141,19 +169,19 @@ async def get_nearby_shelters(
                 name=row.name,
                 address=row.address,
                 shelter_type=row.shelter_type,
-                latitude=row.latitude,
-                longitude=row.longitude,
-                distance=round(row.distance, 1)  # 미터 단위, 소수점 1자리
+                latitude=float(row.latitude),
+                longitude=float(row.longitude),
+                distance=float(row.distance_km) * 1000  # km를 미터로 변환
             ))
         
         logger.info(f"Found {len(shelters)} nearby shelters")
         return NearbySheltersResponse(shelters=shelters)
         
     except Exception as e:
-        logger.error(f"Error getting nearby shelters: {str(e)}")
+        logger.error(f"Error getting nearby shelters: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="대피소 조회 실패"
+            detail=f"대피소 조회 실패: {str(e)}"
         )
 
 

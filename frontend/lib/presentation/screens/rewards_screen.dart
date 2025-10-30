@@ -23,17 +23,28 @@ class _RewardsScreenState extends State<RewardsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadData();
+    // initState에서는 context.read를 사용할 수 없으므로 postFrameCallback 사용
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
+    AppLogger.i('보상 화면 데이터 로딩 시작');
     final trainingUserProvider = context.read<TrainingUserProvider>();
     final rewardsProvider = context.read<RewardsProvider>();
 
+    // 보상 목록은 device_id 없이도 로드 가능
+    await rewardsProvider.loadRewards();
+    AppLogger.i('보상 목록 로드 완료: ${rewardsProvider.state.rewards.length}개');
+
+    // device_id가 있으면 포인트와 쿠폰 로드
     if (trainingUserProvider.state.deviceId != null) {
-      await rewardsProvider.loadRewards();
       await rewardsProvider.loadPointsBalance(trainingUserProvider.state.deviceId!);
       await rewardsProvider.loadMyCodes(trainingUserProvider.state.deviceId!);
+      AppLogger.i('포인트 및 쿠폰 로드 완료');
+    } else {
+      AppLogger.w('deviceId가 없어서 포인트/쿠폰을 로드할 수 없습니다');
     }
   }
 

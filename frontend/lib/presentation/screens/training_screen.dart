@@ -41,7 +41,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       _updateMarkers();
     }
 
-    // 그 다음 실제 GPS 위치 가져오기 시도
+    // 그 다음 실제 GPS 위치 가져오기 시도 (한국 내에서만)
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -54,23 +54,31 @@ class _TrainingScreenState extends State<TrainingScreen> {
           desiredAccuracy: LocationAccuracy.high,
         );
         
-        // GPS 위치로 업데이트
-        setState(() {
-          _currentLocation = LatLng(position.latitude, position.longitude);
-        });
-
-        // 카메라 이동
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(_currentLocation!),
-        );
-
-        // 새 위치 기반 대피소 로드
-        if (mounted) {
-          await context.read<TrainingProvider>().loadNearbyShelters(_currentLocation!);
-          _updateMarkers();
-        }
+        // 한국 범위 내에 있는지 확인 (위도: 33-43, 경도: 124-132)
+        final isInKorea = position.latitude >= 33 && position.latitude <= 43 &&
+                          position.longitude >= 124 && position.longitude <= 132;
         
-        AppLogger.i('실제 GPS 위치로 업데이트: ${position.latitude}, ${position.longitude}');
+        if (isInKorea) {
+          // GPS 위치로 업데이트 (한국 내에서만)
+          setState(() {
+            _currentLocation = LatLng(position.latitude, position.longitude);
+          });
+
+          // 카메라 이동
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLng(_currentLocation!),
+          );
+
+          // 새 위치 기반 대피소 로드
+          if (mounted) {
+            await context.read<TrainingProvider>().loadNearbyShelters(_currentLocation!);
+            _updateMarkers();
+          }
+          
+          AppLogger.i('실제 GPS 위치로 업데이트: ${position.latitude}, ${position.longitude}');
+        } else {
+          AppLogger.i('GPS 위치가 한국 범위를 벗어남. 기본 위치(한양대 ERICA) 유지');
+        }
       }
     } catch (e) {
       AppLogger.e('GPS 위치 가져오기 실패 (기본 위치 유지): $e');
