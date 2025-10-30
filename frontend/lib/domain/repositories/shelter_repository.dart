@@ -6,7 +6,7 @@ abstract class ShelterRepository {
   Future<List<Shelter>> getNearestShelters({
     required double latitude,
     required double longitude,
-    int limit = 10,
+    int limit = 5,
   });
 
   /// 특정 대피소 상세 정보 조회

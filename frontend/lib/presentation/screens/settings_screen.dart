@@ -16,25 +16,38 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _selectedGender = 'male';
   String _selectedAgeGroup = '성인';
-  String _selectedMobility = 'normal';
   bool _notificationsEnabled = true;
   bool _highPriorityNotifications = true;
   bool _soundEnabled = true;
+
+  // 🩺 질환 목록 동적 추가용 리스트
+  final List<TextEditingController> _diseaseControllers = [];
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _addDiseaseField(); // 기본 1개 필드 생성
+  }
+
+  void _addDiseaseField() {
+    setState(() {
+      _diseaseControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeDiseaseField(int index) {
+    setState(() {
+      _diseaseControllers.removeAt(index);
+    });
   }
 
   void _loadUserProfile() {
-    final userProfileAsync = ref.read(userProfileNotifierProvider);
+    final userProfileAsync = ref.read(userProfileProvider);
     userProfileAsync.whenData((profile) {
       if (profile != null) {
         setState(() {
-          // _selectedGender는 UserProfile에 없으므로 기본값 유지
           _selectedAgeGroup = profile.ageGroup;
-          _selectedMobility = profile.mobility;
           _notificationsEnabled = profile.notificationsEnabled;
           _highPriorityNotifications = profile.highPriorityNotifications;
           _soundEnabled = profile.soundEnabled;
@@ -45,473 +58,332 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return MainLayout(
-      currentIndex: 2,
+      currentIndex: 3, // 훈련 시스템 추가로 인덱스 변경 (홈/훈련/보상/설정)
       child: Scaffold(
         appBar: AppBar(
           title: const Text('설정'),
         ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 개인 정보 섹션
-            Text(
-              '개인 정보',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.wc,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '성별',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '성별에 맞는 안내를 제공합니다',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: InkWell(
-                                  onTap: () => setState(() => _selectedGender = 'male'),
-                                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                    decoration: BoxDecoration(
-                                      color: _selectedGender == 'male'
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                      border: Border.all(
-                                        color: _selectedGender == 'male'
-                                            ? Theme.of(context).colorScheme.primary
-                                            : Colors.grey[300]!,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.male,
-                                          size: 20,
-                                          color: _selectedGender == 'male'
-                                              ? Colors.white
-                                              : Colors.grey[700],
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '남성',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: _selectedGender == 'male' ? FontWeight.w600 : FontWeight.w500,
-                                            color: _selectedGender == 'male'
-                                                ? Colors.white
-                                                : Colors.grey[800],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 4),
-                                child: InkWell(
-                                  onTap: () => setState(() => _selectedGender = 'female'),
-                                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                    decoration: BoxDecoration(
-                                      color: _selectedGender == 'female'
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                      border: Border.all(
-                                        color: _selectedGender == 'female'
-                                            ? Theme.of(context).colorScheme.primary
-                                            : Colors.grey[300]!,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.female,
-                                          size: 20,
-                                          color: _selectedGender == 'female'
-                                              ? Colors.white
-                                              : Colors.grey[700],
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '여성',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: _selectedGender == 'female' ? FontWeight.w600 : FontWeight.w500,
-                                            color: _selectedGender == 'female'
-                                                ? Colors.white
-                                                : Colors.grey[800],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.person_outline,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '연령대',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '맞춤형 대피 안내를 위해 필요합니다',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-                        Column(
-                          children: [
-                            Row(
-                              children: ['어린이', '청소년'].map((age) {
-                                final isSelected = _selectedAgeGroup == age;
-                                return Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: InkWell(
-                                      onTap: () => setState(() => _selectedAgeGroup = age),
-                                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Colors.grey[100],
-                                          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? Theme.of(context).colorScheme.primary
-                                                : Colors.grey[300]!,
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            age,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : Colors.grey[800],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: ['성인', '노인'].map((age) {
-                                final isSelected = _selectedAgeGroup == age;
-                                return Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: InkWell(
-                                      onTap: () => setState(() => _selectedAgeGroup = age),
-                                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Colors.grey[100],
-                                          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? Theme.of(context).colorScheme.primary
-                                                : Colors.grey[300]!,
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            age,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : Colors.grey[800],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.accessibility_new,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '이동성',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '대피소 및 경로 추천에 활용됩니다',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        _MobilityOption(
-                          icon: Icons.directions_walk,
-                          title: '정상',
-                          subtitle: '빠른 이동 가능',
-                          value: 'normal',
-                          groupValue: _selectedMobility,
-                          onChanged: (value) {
-                            setState(() => _selectedMobility = value!);
-                          },
-                        ),
-                        _MobilityOption(
-                          icon: Icons.accessible,
-                          title: '제한적',
-                          subtitle: '천천히 이동 가능',
-                          value: 'limited',
-                          groupValue: _selectedMobility,
-                          onChanged: (value) {
-                            setState(() => _selectedMobility = value!);
-                          },
-                        ),
-                        _MobilityOption(
-                          icon: Icons.wheelchair_pickup,
-                          title: '휠체어 사용',
-                          subtitle: '휠체어 접근 가능 시설 필요',
-                          value: 'wheelchair',
-                          groupValue: _selectedMobility,
-                          onChanged: (value) {
-                            setState(() => _selectedMobility = value!);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 알림 설정 섹션
-            Text(
-              '알림 설정',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('위치 기반 알림'),
-                      subtitle: const Text('현재 위치 기반 재난 알림 수신'),
-                      value: _notificationsEnabled,
-                      onChanged: (value) {
-                        setState(() => _notificationsEnabled = value);
-                      },
-                    ),
-                    const Divider(),
-                    SwitchListTile(
-                      title: const Text('높은 우선순위'),
-                      subtitle: const Text('중요한 알림을 우선적으로 표시'),
-                      value: _highPriorityNotifications,
-                      onChanged: (value) {
-                        setState(() => _highPriorityNotifications = value);
-                      },
-                    ),
-                    const Divider(),
-                    SwitchListTile(
-                      title: const Text('소리 알림'),
-                      subtitle: const Text('알림 수신 시 소리 재생'),
-                      value: _soundEnabled,
-                      onChanged: (value) {
-                        setState(() => _soundEnabled = value);
-                      },
-                    ),
-                  ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.paddingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 🧍‍♂️ 개인 정보 섹션
+              Text(
+                '개인 정보',
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: (textTheme.headlineSmall?.fontSize ?? 20) + 2,
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 24),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildGenderSection(context),
+                      const Divider(height: 24),
+                      _buildAgeSection(context),
+                      const Divider(height: 24),
 
-            // 정보 섹션
-            Text(
-              '정보',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: const Text('앱 버전'),
-                    trailing: Text(
-                      AppConstants.appVersion,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      // 🩺 “앓고 있는 질환이 있나요?” 섹션
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '앓고 있는 질환이 있나요?',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize:
+                                  (textTheme.titleMedium?.fontSize ?? 16) + 2,
+                            ),
+                          )
+                        ],
+                      ),
+                      Column(
+                        children: List.generate(_diseaseControllers.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _diseaseControllers[index],
+                                    style: const TextStyle(fontSize: 16),
+                                    decoration: InputDecoration(
+                                      labelText: '질환 ${index + 1}',
+                                      labelStyle: TextStyle(
+                                          fontSize: (textTheme.bodyMedium?.fontSize ?? 14) + 2),
+                                      hintText: '예: 고혈압, 천식 등',
+                                      hintStyle: TextStyle(
+                                          fontSize: (textTheme.bodySmall?.fontSize ?? 12) + 2),
+                                      border: const OutlineInputBorder(),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                  color: Colors.redAccent,
+                                  onPressed: () => _removeDiseaseField(index),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ),
+                      Center(
+                      child: IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        color: Theme.of(context).colorScheme.primary,
+                        iconSize: 28,
+                        tooltip: "질환 항목 추가",
+                        onPressed: _addDiseaseField,
+                      ),
                     ),
+                    ],
                   ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined),
-                    title: const Text('개인정보 처리방침'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: 개인정보 처리방침 화면
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: const Text('서비스 약관'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: 서비스 약관 화면
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.help_outline),
-                    title: const Text('도움말'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: 도움말 화면
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // 저장 버튼
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _saveSettings,
-                icon: const Icon(Icons.save),
-                label: const Text('설정 저장'),
+              /// 🔔 알림 설정
+              Text(
+                '알림 설정',
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: (textTheme.headlineSmall?.fontSize ?? 20) + 2,
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              _buildNotificationSettings(context),
 
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+
+              /// 📱 앱 정보
+              _buildAppInfoSection(context),
+
+              const SizedBox(height: 24),
+
+              /// 💾 저장 버튼
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _saveSettings,
+                  icon: const Icon(Icons.save),
+                  label: const Text('설정 저장', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
+  /// 👩 성별
+  Widget _buildGenderSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.wc, size: 22, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              '성별',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: (textTheme.titleMedium?.fontSize ?? 16) + 2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _genderButton(context, 'male', '남성', Icons.male),
+            _genderButton(context, 'female', '여성', Icons.female),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _genderButton(BuildContext context, String value, String label, IconData icon) {
+    final isSelected = _selectedGender == value;
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: InkWell(
+          onTap: () => setState(() => _selectedGender = value),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[100],
+              borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+              border: Border.all(
+                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[300]!,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 22, color: isSelected ? Colors.white : Colors.grey[700]),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? Colors.white : Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 👶 연령대
+  Widget _buildAgeSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.person_outline, size: 22, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              '연령대',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: (textTheme.titleMedium?.fontSize ?? 16) + 2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: ['어린이', '청소년', '성인', '노인']
+              .map((age) => ChoiceChip(
+                    label: Text(
+                      age,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    selected: _selectedAgeGroup == age,
+                    onSelected: (_) => setState(() => _selectedAgeGroup = age),
+                    selectedColor: Theme.of(context).colorScheme.primary,
+                    labelStyle: TextStyle(
+                      color: _selectedAgeGroup == age ? Colors.white : Colors.grey[800],
+                    ),
+                  ))
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  /// 🔔 알림 설정
+  Widget _buildNotificationSettings(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.paddingLarge),
+        child: Column(
+          children: [
+            SwitchListTile(
+              title: Text('위치 기반 알림', style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 16) + 2)),
+              subtitle: Text('현재 위치 기반 재난 알림 수신', style: TextStyle(fontSize: (textTheme.bodySmall?.fontSize ?? 12) + 2)),
+              value: _notificationsEnabled,
+              onChanged: (value) => setState(() => _notificationsEnabled = value),
+            ),
+            const Divider(),
+            SwitchListTile(
+              title: Text('높은 우선순위', style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 16) + 2)),
+              subtitle: Text('중요한 알림을 우선적으로 표시', style: TextStyle(fontSize: (textTheme.bodySmall?.fontSize ?? 12) + 2)),
+              value: _highPriorityNotifications,
+              onChanged: (value) => setState(() => _highPriorityNotifications = value),
+            ),
+            const Divider(),
+            SwitchListTile(
+              title: Text('소리 알림', style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 16) + 2)),
+              subtitle: Text('알림 수신 시 소리 재생', style: TextStyle(fontSize: (textTheme.bodySmall?.fontSize ?? 12) + 2)),
+              value: _soundEnabled,
+              onChanged: (value) => setState(() => _soundEnabled = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 📱 앱 정보
+  Widget _buildAppInfoSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text('앱 버전',
+                style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 14) + 2)),
+            trailing: Text(AppConstants.appVersion,
+                style: TextStyle(fontSize: (textTheme.bodySmall?.fontSize ?? 12) + 2)),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: Text('개인정보 처리방침',
+                style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 14) + 2)),
+            trailing: const Icon(Icons.chevron_right),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: Text('서비스 약관',
+                style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 14) + 2)),
+            trailing: const Icon(Icons.chevron_right),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: Text('도움말',
+                style: TextStyle(fontSize: (textTheme.bodyLarge?.fontSize ?? 14) + 2)),
+            trailing: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 저장
   Future<void> _saveSettings() async {
+    final diseases = _diseaseControllers.map((c) => c.text).where((t) => t.isNotEmpty).join(', ');
     final profile = UserProfile(
       ageGroup: _selectedAgeGroup,
-      mobility: _selectedMobility,
       notificationsEnabled: _notificationsEnabled,
       highPriorityNotifications: _highPriorityNotifications,
       soundEnabled: _soundEnabled,
+      disease: diseases,
       lastUpdated: DateTime.now(),
     );
 
@@ -527,96 +399,3 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 }
-
-/// 이동성 옵션 위젯
-class _MobilityOption extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String value;
-  final String groupValue;
-  final ValueChanged<String?> onChanged;
-
-  const _MobilityOption({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.groupValue,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = value == groupValue;
-    
-    return InkWell(
-      onTap: () => onChanged(value),
-      borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-          border: Border.all(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            Radio<String>(
-              value: value,
-              groupValue: groupValue,
-              onChanged: onChanged,
-              visualDensity: VisualDensity.compact,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-

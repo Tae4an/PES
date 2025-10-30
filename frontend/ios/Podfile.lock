@@ -1,4 +1,6 @@
 PODS:
+  - device_info_plus (0.0.1):
+    - Flutter
   - Firebase/CoreOnly (10.25.0):
     - FirebaseCore (= 10.25.0)
   - Firebase/Messaging (10.25.0):
@@ -100,6 +102,7 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
@@ -128,6 +131,8 @@ SPEC REPOS:
     - PromisesObjC
 
 EXTERNAL SOURCES:
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   firebase_core:
     :path: ".symlinks/plugins/firebase_core/ios"
   firebase_messaging:
@@ -154,29 +159,30 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
+  device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d
   Firebase: 0312a2352584f782ea56f66d91606891d4607f06
-  firebase_core: 3b49a055ff54114cae400581c13671fe53936c36
-  firebase_messaging: 394589dcda43e42ec9807558a409a975e285c45b
+  firebase_core: a626d00494efa398e7c54f25f1454a64c8abf197
+  firebase_messaging: 1541105e2a2a6ef8bd869bcc44157d31e82f3a50
   FirebaseCore: 7ec4d0484817f12c3373955bc87762d96842d483
   FirebaseCoreInternal: df84dd300b561c27d5571684f389bf60b0a5c934
   FirebaseInstallations: 913cf60d0400ebd5d6b63a28b290372ab44590dd
   FirebaseMessaging: 88950ba9485052891ebe26f6c43a52bb62248952
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
-  geocoding_ios: 86f1c479822f07a2f79f7094f2b753d1e9e20215
-  geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
+  flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  geocoding_ios: a389ea40f6f548de6e63006a2e31bf66ff80769a
+  geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
-  google_maps_flutter_ios: 0291eb2aa252298a769b04d075e4a9d747ff7264
+  google_maps_flutter_ios: e31555a04d1986ab130f2b9f24b6cdc861acc6d3
   GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
   GoogleMaps: 8939898920281c649150e0af74aa291c60f2e77d
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
-  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
-  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
-  url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
+  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
+  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
 
 PODFILE CHECKSUM: d68df3fd7e6a050866badcd4b15167558f9eea31
 

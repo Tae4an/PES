@@ -5,12 +5,15 @@ part 'shelter_model.g.dart';
 
 @JsonSerializable()
 class ShelterModel {
+  @JsonKey(defaultValue: 0)
   final int id;
   final String name;
   final String address;
+  @JsonKey(name: 'shelter_type')
   final String type;
   final double latitude;
   final double longitude;
+  @JsonKey(defaultValue: 0)
   final int capacity;
   @JsonKey(name: 'phone_number')
   final String? phoneNumber;

@@ -31,7 +31,8 @@ class ActionCardResponse(BaseModel):
     id: str
     disaster_id: int
     title: str
-    description: str
+    description: str    
+    priority: str  # 심각도 (high, medium, low) - UI에서는 표시 안 함
     estimated_time: int  # 분 단위
     steps: List[str]
     emergency_contacts: List[str]
@@ -66,7 +67,7 @@ async def generate_action_card(request: ActionCardRequest):
         
         # 1. 재난 정보 조회 (Mock - 실제로는 DB에서)
         disaster_type = _get_disaster_type(request.disaster_id)
-        location = "제주도"  # Mock 위치
+        location = "경기도 안산시"  # 안산시 기본 위치
         logger.info(f"📍 재난 유형: {disaster_type}, 위치: {location}")
         
         # 2. 주변 대피소 검색 (재난 유형에 맞는 대피소 필터링)
@@ -223,39 +224,39 @@ def _get_mock_shelters(latitude: float, longitude: float) -> List[ShelterInfo]:
     Returns:
         거리순으로 정렬된 대피소 리스트
     """
-    # Mock 대피소 목록 
+    # Mock 대피소 목록 (안산시 기반)
     mock_shelters_data = [
         {
-            "name": "제주시민회관 대피소",
-            "address": "제주시 동광로 20",
+            "name": "한양대학교(본관 지하1층)",
+            "address": "경기도 안산시 상록구 한양대학로 55 (사동)",
             "shelter_type": "지진대피소",
             "capacity": 200,
-            "latitude": 33.5010,
-            "longitude": 126.5314
+            "latitude": 37.2960668,
+            "longitude": 126.8347845
         },
         {
-            "name": "제주도청 비상대피소",
-            "address": "제주시 문연로 6",
-            "shelter_type": "산불대피소",
+            "name": "안산동산교회 복지문화센터",
+            "address": "경기도 안산시 상록구 석호공원로 8 (사동)",
+            "shelter_type": "민방위대피소",
             "capacity": 150,
-            "latitude": 33.4890,
-            "longitude": 126.5012
+            "latitude": 37.3015196,
+            "longitude": 126.8440039
         },
         {
-            "name": "제주중앙초등학교 대피소",
-            "address": "제주시 중앙로 213",
-            "shelter_type": "해일대피소",
+            "name": "상록구청(지하주차장)",
+            "address": "경기도 안산시 상록구 석호로 110-0 (사동)",
+            "shelter_type": "지진대피소",
             "capacity": 300,
-            "latitude": 33.5120,
-            "longitude": 126.5218
+            "latitude": 37.3006546,
+            "longitude": 126.8465397
         },
         {
-            "name": "제주국제공항 비상대피소",
-            "address": "제주시 공항로 2",
+            "name": "선경아파트",
+            "address": "경기도 안산시 상록구 감골2로 58 (사동)",
             "shelter_type": "민방위대피소",
             "capacity": 500,
-            "latitude": 33.5067,
-            "longitude": 126.4929
+            "latitude": 37.2919421,
+            "longitude": 126.8502666
         }
     ]
     
@@ -349,9 +350,10 @@ def _build_action_card_response(
         disaster_id=request.disaster_id,
         title=title,
         description=description,
+        priority="high",  # 기본 심각도 (UI에서는 표시 안 함)
         estimated_time=estimated_time,
         steps=steps[:5],  # 최대 5개 단계
-        emergency_contacts=["119", "112", "제주도청 064-710-2114"],
+        emergency_contacts=["119", "112", "안산시청 031-481-5000"],
         created_at=datetime.now().isoformat()
     )
 
@@ -367,13 +369,14 @@ async def get_action_card(card_id: str):
             disaster_id=55,
             title="산불 대피 행동 지침",
             description="건조특보 발효 중 산불 위험이 높습니다.",
+            priority="high",
             estimated_time=15,
             steps=[
                 "현재 위치에서 가장 가까운 대피소로 이동",
                 "마스크를 착용하여 연기에 노출되지 않도록 주의",
                 "대피소 도착 후 안전 확인 및 가족에게 연락"
             ],
-            emergency_contacts=["119", "112", "제주도청 064-710-2114"],
+            emergency_contacts=["119", "112", "안산시청 031-481-5000"],
             created_at=datetime.now().isoformat()
         )
         
@@ -403,6 +406,7 @@ async def get_action_cards(
                 disaster_id=55,
                 title="산불 대피 행동 지침",
                 description="건조특보 발효 중 산불 위험이 높습니다.",
+                priority="high",
                 estimated_time=15,
                 steps=[
                     "현재 위치에서 가장 가까운 대피소로 이동",

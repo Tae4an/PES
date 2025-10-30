@@ -32,7 +32,7 @@ class DisasterModel {
     return Disaster(
       id: serialNumber,
       type: category,
-      location: '제주도', // 백엔드 데이터에 위치 정보가 없으므로 기본값
+      location: '경기도 안산시', // 안산시 기본값
       message: message,
       severity: 'high', // 기본값
       latitude: 37.2970, // 한양대 ERICA 캠퍼스 위도

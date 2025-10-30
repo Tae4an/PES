@@ -1,0 +1,25 @@
+{
+  "landmarks": [
+    {
+      "name": "대포 해안 주상 절리대",
+      "latitude": 33.2367,
+      "longitude": 126.4323
+    },
+    {
+      "name": "제주 감녕 미로 마을",
+      "latitude": 33.5556,
+      "longitude": 126.7624
+    },
+    {
+      "name": "섭지코지",
+      "latitude": 33.4591,
+      "longitude": 126.9397
+    },
+    {
+      "name": "제주 돌문화 공원",
+      "latitude": 33.4604,
+      "longitude": 126.6709
+    }
+  ]
+}
+

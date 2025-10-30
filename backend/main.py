@@ -8,7 +8,7 @@ import logging
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.endpoints import shelters, disasters, health, admin, action_cards, fcm
+from app.api.v1.endpoints import shelters, disasters, health, admin, action_cards, fcm, users, training, rewards
 from app.db.session import log_shelter_db_info
 # Phase 2: DB 연동 시 활성화 예정
 # from app.api.v1.endpoints import user, shelters
@@ -99,6 +99,25 @@ app.include_router(
     fcm.router,
     prefix="/api/v1/fcm",
     tags=["FCM"]
+)
+
+# 훈련 시스템 API
+app.include_router(
+    users.router,
+    prefix="/api/v1/users",
+    tags=["Users"]
+)
+
+app.include_router(
+    training.router,
+    prefix="/api/v1/training",
+    tags=["Training"]
+)
+
+app.include_router(
+    rewards.router,
+    prefix="/api/v1/rewards",
+    tags=["Rewards"]
 )
 
 

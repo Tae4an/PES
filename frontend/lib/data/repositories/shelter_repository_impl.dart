@@ -11,15 +11,15 @@ class ShelterRepositoryImpl implements ShelterRepository {
   Future<List<Shelter>> getNearestShelters({
     required double latitude,
     required double longitude,
-    int limit = 10,
+    int limit = 5,
   }) async {
     try {
-      final models = await _remoteDataSource.getNearestShelters(
+      final response = await _remoteDataSource.getNearestShelters(
         latitude,
         longitude,
         limit,
       );
-      return models.map((m) => m.toEntity()).toList();
+      return response.shelters.map((m) => m.toEntity()).toList();
     } catch (e) {
       throw Exception('Failed to get nearest shelters: $e');
     }

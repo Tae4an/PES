@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/constants.dart';
 import '../providers/location_provider.dart';
 import '../providers/shelter_provider.dart';
-// import '../providers/disaster_provider.dart';
-import '../widgets/main_layout.dart';
 
-/// 지도 전체보기 화면
-class MapScreen extends ConsumerStatefulWidget {
-  const MapScreen({super.key});
+/// 대피소 지도 위젯 (재사용 가능)
+class ShelterMapWidget extends ConsumerStatefulWidget {
+  final bool showAppBar;
+  
+  const ShelterMapWidget({
+    super.key,
+    this.showAppBar = true,
+  });
 
   @override
-  ConsumerState<MapScreen> createState() => _MapScreenState();
+  ConsumerState<ShelterMapWidget> createState() => _ShelterMapWidgetState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> {
+class _ShelterMapWidgetState extends ConsumerState<ShelterMapWidget> {
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   final Set<Circle> _circles = {};
@@ -32,23 +35,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Future<void> _loadAddress() async {
     try {
-      // 한양대 ERICA 고정 좌표
       final placemarks = await placemarkFromCoordinates(
         37.295692,
         126.841425,
         localeIdentifier: 'ko_KR',
       );
-
+      
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
         setState(() {
-          // 한국 주소 형식: 시/도 구/군 동 상세주소
           _currentAddress = '${place.administrativeArea ?? ''} '
-                  '${place.locality ?? ''} '
-                  '${place.subLocality ?? ''}'
+              '${place.locality ?? ''} '
+              '${place.subLocality ?? ''}'
               .trim();
-
-          // 만약 주소가 비어있으면 기본값
+          
           if (_currentAddress.isEmpty) {
             _currentAddress = '경기도 안산시 상록구 사동';
           }
@@ -64,225 +64,178 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(currentLocationProvider);
-    // final activeDisastersAsync = ref.watch(activeDisastersProvider);
 
-    return MainLayout(
-      currentIndex: 1,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('지도'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => _refreshAndCenter(),
-            ),
-          ],
-        ),
-        body: locationAsync.when(
-          data: (location) {
-            if (location == null) {
-              return const Center(
-                child: Text('위치 정보를 가져올 수 없습니다'),
-              );
+    return locationAsync.when(
+      data: (location) {
+        if (location == null) {
+          return const Center(
+            child: Text('위치 정보를 가져올 수 없습니다'),
+          );
+        }
+
+        final currentLatLng = LatLng(location.latitude, location.longitude);
+
+        final sheltersAsync = ref.watch(
+          nearestSheltersProvider(NearestSheltersParams(
+            latitude: 37.295692,
+            longitude: 126.841425,
+            limit: 10,
+          )),
+        );
+
+        sheltersAsync.when(
+          data: (shelters) {
+            if (!_markersInitialized && shelters.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _updateMarkers(currentLatLng, shelters);
+                _markersInitialized = true;
+              });
             }
+            return null;
+          },
+          loading: () => null,
+          error: (_, __) => null,
+        );
 
-            final currentLatLng = LatLng(location.latitude, location.longitude);
-
-            // 대피소 정보 가져오기 (한양대 ERICA 기준 고정)
-            final sheltersAsync = ref.watch(
-              nearestSheltersProvider(NearestSheltersParams(
-                latitude: 37.295692,
-                longitude: 126.841425,
-                limit: 10,
-              )),
-            );
-
-            // 대피소 마커 업데이트
-            sheltersAsync.when(
-              data: (shelters) {
-                if (!_markersInitialized && shelters.isNotEmpty) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _updateMarkers(currentLatLng, shelters);
-                    _markersInitialized = true;
-                  });
-                }
-                return null;
-              },
-              loading: () => null,
-              error: (_, __) => null,
-            );
-
-            // 재난 위험 지역 표시 (비활성화)
-            // activeDisastersAsync.whenData((disasters) {
-            //   if (disasters.isNotEmpty) {
-            //     WidgetsBinding.instance.addPostFrameCallback((_) {
-            //       _updateDisasterCircle(disasters.first);
-            //     });
-            //   }
-            // });
-
-            return Column(
-              children: [
-                // 현재 위치 정보 (가용 높이의 15%)
-                Expanded(
-                  flex: 15,
-                  child: Container(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on,
-                                size: 20, color: AppColors.safe),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _currentAddress,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+        return Column(
+          children: [
+            // 현재 위치 정보
+            Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              padding: const EdgeInsets.all(AppConstants.paddingLarge),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, size: 20, color: AppColors.safe),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _currentAddress,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-                // 지도 영역 (가용 높이의 45%)
-                Expanded(
-                  flex: 45,
-                  child: Stack(
-                    children: [
-                      GoogleMap(
-                        initialCameraPosition: const CameraPosition(
-                          target: LatLng(37.2970, 126.8373), // 한양대 ERICA 고정
-                          zoom: 15.0,
-                        ),
-                        markers: _markers,
-                        circles: _circles,
-                        onMapCreated: (controller) {
-                          _mapController = controller;
-                          // 마커 업데이트 후 카메라 이동
-                          Future.delayed(const Duration(milliseconds: 500), () {
-                            controller.animateCamera(
-                              CameraUpdate.newLatLngZoom(
-                                const LatLng(37.2970, 126.8373),
-                                15.0,
-                              ),
-                            );
-                          });
-                        },
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        onTap: (latLng) {
-                          // 지도 탭 시 마커 정보 닫기
-                        },
+                ],
+              ),
+            ),
+            // 지도 영역
+            Expanded(
+              flex: 45,
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    initialCameraPosition: const CameraPosition(
+                      target: LatLng(37.2970, 126.8373),
+                      zoom: 15.0,
+                    ),
+                    markers: _markers,
+                    circles: _circles,
+                    onMapCreated: (controller) {
+                      _mapController = controller;
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        controller.animateCamera(
+                          CameraUpdate.newLatLngZoom(
+                            const LatLng(37.2970, 126.8373),
+                            15.0,
+                          ),
+                        );
+                      });
+                    },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
+                  ),
+                  // 줌 컨트롤 버튼
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ZoomCircleButton(
+                            icon: Icons.add,
+                            onPressed: _zoomIn,
+                          ),
+                          const SizedBox(height: 10),
+                          _ZoomCircleButton(
+                            icon: Icons.remove,
+                            onPressed: _zoomOut,
+                          ),
+                        ],
                       ),
-                      // 줌 컨트롤 버튼
-                      Positioned(
-                        right: 12,
-                        bottom: 12,
-                        child: SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _ZoomCircleButton(
-                                icon: Icons.add,
-                                onPressed: _zoomIn,
-                              ),
-                              const SizedBox(height: 10),
-                              _ZoomCircleButton(
-                                icon: Icons.remove,
-                                onPressed: _zoomOut,
-                              ),
-                            ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // 대피소 목록 영역
+            Expanded(
+              flex: 40,
+              child: Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: sheltersAsync.when(
+                  data: (shelters) {
+                    if (shelters.isEmpty) {
+                      return const Center(
+                        child: Text('주변에 대피소가 없습니다'),
+                      );
+                    }
+                    
+                    final sortedShelters = List.from(shelters)
+                      ..sort((a, b) => 
+                        (a.distanceKm ?? double.infinity)
+                          .compareTo(b.distanceKm ?? double.infinity));
+                    final topShelters = sortedShelters.take(5).toList();
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            '가까운 대피소',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: topShelters.length,
+                            itemBuilder: (context, index) {
+                              final shelter = topShelters[index];
+                              return _ShelterListItem(
+                                shelter: shelter,
+                                rank: index + 1,
+                                onTap: () => _showShelterBottomSheet(shelter),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (e, st) => Center(
+                    child: Text('대피소 정보를 불러올 수 없습니다\n$e'),
                   ),
                 ),
-                // 대피소 목록 영역 (가용 높이의 40%)
-                Expanded(
-                  flex: 40,
-                  child: Container(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: sheltersAsync.when(
-                      data: (shelters) {
-                        if (shelters.isEmpty) {
-                          return const Center(
-                            child: Text('주변에 대피소가 없습니다'),
-                          );
-                        }
-
-                        // 거리순으로 정렬된 대피소 목록 (최대 5개)
-                        final sortedShelters = List.from(shelters)
-                          ..sort((a, b) => (a.distanceKm ?? double.infinity)
-                              .compareTo(b.distanceKm ?? double.infinity));
-                        final topShelters = sortedShelters.take(5).toList();
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text(
-                                '가까운 대피소',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                            ),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: topShelters.length,
-                                itemBuilder: (context, index) {
-                                  final shelter = topShelters[index];
-                                  return _ShelterListItem(
-                                    shelter: shelter,
-                                    rank: index + 1,
-                                    onTap: () =>
-                                        _showShelterBottomSheet(shelter),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      error: (e, st) => Center(
-                        child: Text('대피소 정보를 불러올 수 없습니다\n$e'),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          error: (e, st) => Center(
-            child: Text('오류: $e'),
-          ),
-        ),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (e, st) => Center(
+        child: Text('오류: $e'),
       ),
     );
   }
@@ -301,8 +254,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       );
 
-      // 특정 위치 마커 - 길찾기 가능
-      // 한양대 ERICA 캠퍼스
+      // 한양대 ERICA 마커
       _markers.add(
         Marker(
           markerId: const MarkerId('custom_location'),
@@ -323,7 +275,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       );
 
-      // 대피소 마커 (API 데이터 기반)
+      // 대피소 마커
       for (int i = 0; i < shelters.length; i++) {
         final shelter = shelters[i];
         final uniqueId = 'shelter_${shelter.latitude}_${shelter.longitude}';
@@ -343,35 +295,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         );
       }
-
-      // 디버그: 마커 수 출력
-      print('🗺️ 마커 업데이트 완료: ${_markers.length}개');
-      print(
-          '📍 현재 위치: ${currentLocation.latitude}, ${currentLocation.longitude}');
-      print('🏫 한양대 ERICA: 37.2970, 126.8373');
-      print('📌 마커 상세:');
-      for (var marker in _markers) {
-        print(
-            '   - ${marker.markerId.value}: (${marker.position.latitude}, ${marker.position.longitude})');
-      }
     });
   }
-
-  // void _updateDisasterCircle(disaster) {
-  //   setState(() {
-  //     _circles.clear();
-  //     _circles.add(
-  //       Circle(
-  //         circleId: CircleId('disaster_${disaster.id}'),
-  //         center: LatLng(disaster.latitude, disaster.longitude),
-  //         radius: disaster.radiusKm * 1000, // km to meters
-  //         fillColor: AppColors.critical.withValues(alpha: 0.2),
-  //         strokeColor: AppColors.critical,
-  //         strokeWidth: 2,
-  //       ),
-  //     );
-  //   });
-  // }
 
   void _showShelterBottomSheet(shelter) {
     showModalBottomSheet(
@@ -429,7 +354,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 커스텀 위치 바텀시트 (특정 장소용)
   void _showCustomLocationBottomSheet({
     required String name,
     required String address,
@@ -482,25 +406,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _InfoItem(
-                  icon: Icons.public,
-                  label: '특정 장소',
-                ),
-                _InfoItem(
-                  icon: Icons.star,
-                  label: '저장된 위치',
-                ),
-                _InfoItem(
-                  icon: Icons.location_on,
-                  label:
-                      '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -522,9 +427,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 길찾기 시작 (구글맵 또는 외부 네비게이션 앱 실행)
   Future<void> _startNavigation(double latitude, double longitude) async {
-    // 현재 위치 가져오기
     final currentLocation = await ref.read(currentLocationProvider.future);
 
     if (currentLocation == null) {
@@ -536,12 +439,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    // 구글맵 길찾기 URL (directions)
     final url = Uri.parse(
       'https://www.google.com/maps/dir/?api=1'
       '&origin=${currentLocation.latitude},${currentLocation.longitude}'
       '&destination=$latitude,$longitude'
-      '&travelmode=walking', // walking, driving, transit, bicycling
+      '&travelmode=walking',
     );
 
     try {
@@ -555,31 +457,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  /// 위치 새로고침 및 카메라 중앙 이동
-  Future<void> _refreshAndCenter() async {
-    // 위치 정보 새로고침
-    ref.invalidate(currentLocationProvider);
-
-    // 새 위치 정보 가져오기
-    final location = await ref.read(currentLocationProvider.future);
-    if (location != null && _mapController != null) {
-      await _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(location.latitude, location.longitude),
-          AppConstants.defaultZoom,
-        ),
-      );
-    }
-  }
-
-  /// 지도 확대
   Future<void> _zoomIn() async {
     if (_mapController != null) {
       await _mapController!.animateCamera(CameraUpdate.zoomIn());
     }
   }
 
-  /// 지도 축소
   Future<void> _zoomOut() async {
     if (_mapController != null) {
       await _mapController!.animateCamera(CameraUpdate.zoomOut());
@@ -593,7 +476,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 }
 
-/// 원형 줌 버튼 위젯
 class _ZoomCircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
@@ -655,7 +537,6 @@ class _InfoItem extends StatelessWidget {
   }
 }
 
-/// 대피소 목록 아이템
 class _ShelterListItem extends StatelessWidget {
   final shelter;
   final int rank;
@@ -681,14 +562,13 @@ class _ShelterListItem extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // 순위 표시
               Container(
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: rank <= 3
-                      ? AppColors.safe.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
+                  color: rank <= 3 
+                    ? AppColors.safe.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
@@ -702,7 +582,6 @@ class _ShelterListItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // 대피소 정보
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,8 +589,8 @@ class _ShelterListItem extends StatelessWidget {
                     Text(
                       shelter.name,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -719,13 +598,12 @@ class _ShelterListItem extends StatelessWidget {
                     Text(
                       shelter.type,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
               ),
-              // 거리 및 시간 정보
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -740,9 +618,9 @@ class _ShelterListItem extends StatelessWidget {
                       Text(
                         '${distanceKm.toStringAsFixed(2)}km',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.safe,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.safe,
+                        ),
                       ),
                     ],
                   ),
@@ -758,8 +636,8 @@ class _ShelterListItem extends StatelessWidget {
                       Text(
                         '도보 ${walkingMinutes}분',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -772,3 +650,4 @@ class _ShelterListItem extends StatelessWidget {
     );
   }
 }
+

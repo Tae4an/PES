@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart' as provider;
 import 'firebase_options.dart';
 import 'config/theme.dart';
 import 'config/router_config.dart';
@@ -16,6 +17,9 @@ import 'core/services/fcm_service.dart';
 import 'core/network/dio_client.dart';
 import 'core/utils/logger.dart';
 import 'presentation/widgets/notification_overlay.dart';
+import 'presentation/providers/training_user_provider.dart';
+import 'presentation/providers/training_provider.dart';
+import 'presentation/providers/rewards_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,8 +61,15 @@ void main() async {
 
   // 앱 실행
   runApp(
-    const ProviderScope(
-      child: PesApp(),
+    provider.MultiProvider(
+      providers: [
+        provider.ChangeNotifierProvider(create: (_) => TrainingUserProvider()),
+        provider.ChangeNotifierProvider(create: (_) => TrainingProvider()),
+        provider.ChangeNotifierProvider(create: (_) => RewardsProvider()),
+      ],
+      child: const ProviderScope(
+        child: PesApp(),
+      ),
     ),
   );
 }
@@ -100,6 +111,15 @@ class _PesAppState extends ConsumerState<PesApp> {
         } catch (e) {
           AppLogger.e('FCM 토큰 서버 등록 실패: $e');
           // 토큰 등록 실패해도 앱은 계속 실행
+        }
+
+        // 자동 로그인 (훈련 시스템)
+        try {
+          final trainingUserProvider = provider.Provider.of<TrainingUserProvider>(context, listen: false);
+          await trainingUserProvider.registerOrLogin(fcmToken: token);
+          AppLogger.i('자동 로그인 완료');
+        } catch (e) {
+          AppLogger.e('자동 로그인 실패: $e');
         }
       }
     } catch (e) {

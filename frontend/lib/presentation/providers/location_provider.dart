@@ -7,10 +7,25 @@ final locationManagerProvider = Provider<LocationManager>((ref) {
   return LocationManager();
 });
 
-/// 현재 위치 Provider (FutureProvider)
+/// 현재 위치 Provider (FutureProvider) - 한양대 ERICA 고정
 final currentLocationProvider = FutureProvider<Position?>((ref) async {
-  final locationManager = ref.watch(locationManagerProvider);
-  return await locationManager.getCurrentPosition();
+  // 테스트용 고정 위치: 한양대 ERICA
+  return Position(
+    latitude: 37.295692,
+    longitude: 126.841425,
+    timestamp: DateTime.now(),
+    accuracy: 0.0,
+    altitude: 0.0,
+    altitudeAccuracy: 0.0,
+    heading: 0.0,
+    headingAccuracy: 0.0,
+    speed: 0.0,
+    speedAccuracy: 0.0,
+  );
+  
+  // 실제 위치 사용 시:
+  // final locationManager = ref.watch(locationManagerProvider);
+  // return await locationManager.getCurrentPosition();
 });
 
 /// 위치 스트림 Provider (실시간 위치)

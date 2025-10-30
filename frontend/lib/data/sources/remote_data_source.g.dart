@@ -100,27 +100,27 @@ class _RemoteDataSource implements RemoteDataSource {
   }
 
   @override
-  Future<List<ShelterModel>> getNearestShelters(
+  Future<ShelterResponseModel> getNearestShelters(
     double latitude,
     double longitude,
     int limit,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'latitude': latitude,
-      r'longitude': longitude,
+      r'lat': latitude,
+      r'lng': longitude,
       r'limit': limit,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<ShelterModel>>(Options(
+    final _options = _setStreamType<ShelterResponseModel>(Options(
       method: 'GET',
       headers: _headers,
       extra: _extra,
     )
         .compose(
           _dio.options,
-          '/api/v1/shelters/nearest',
+          '/api/v1/shelters/nearby',
           queryParameters: queryParameters,
           data: _data,
         )
@@ -129,12 +129,10 @@ class _RemoteDataSource implements RemoteDataSource {
           _dio.options.baseUrl,
           baseUrl,
         )));
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<ShelterModel> _value;
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ShelterResponseModel _value;
     try {
-      _value = _result.data!
-          .map((dynamic i) => ShelterModel.fromJson(i as Map<String, dynamic>))
-          .toList();
+      _value = ShelterResponseModel.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
       rethrow;

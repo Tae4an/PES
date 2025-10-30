@@ -14,6 +14,7 @@ import '../widgets/error_card.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/main_layout.dart';
 import '../widgets/action_card_widget.dart';
+import '../widgets/shelter_map_widget.dart';
 import '../../core/services/fcm_service.dart';
 import '../../core/network/dio_client.dart';
 
@@ -308,147 +309,69 @@ class HomeScreen extends ConsumerWidget {
                     data: (disaster) => disaster != null
                         ? Card(
                             color: Theme.of(context).colorScheme.errorContainer,
-                            child: InkWell(
-                              onTap: () => context.push('/action-card'),
-                              borderRadius: BorderRadius.circular(
-                                  AppConstants.borderRadiusMedium),
-                              child: Padding(
-                                padding: const EdgeInsets.all(
-                                    AppConstants.paddingLarge),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          DisasterTypeConfig.getConfig(
-                                                  disaster.type)
-                                              .icon,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                          size: 32,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '${DisasterTypeConfig.getConfig(disaster.type).displayName} - ${disaster.type}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .error,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '발생지: ${disaster.location}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium,
-                                              ),
-                                              Text(
-                                                '심각도: ${disaster.severity}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Icon(Icons.chevron_right),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
-                                        borderRadius: BorderRadius.circular(
-                                            AppConstants.borderRadiusSmall),
+                            child: Padding(
+                              padding: const EdgeInsets.all(
+                                  AppConstants.paddingLarge),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        DisasterTypeConfig.getConfig(
+                                                disaster.type)
+                                            .icon,
+                                        color:
+                                            Theme.of(context).colorScheme.error,
+                                        size: 32,
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '나중에 llm연결',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: (Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.fontSize ??
-                                                          14) *
-                                                      1.5,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            '나중에 llm연결',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: (Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.fontSize ??
-                                                          14) *
-                                                      1.5,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            '나중에 llm연결',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: (Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.fontSize ??
-                                                          14) *
-                                                      1.5,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: FilledButton.icon(
-                                        onPressed: () =>
-                                            context.push('/action-card'),
-                                        icon: const Icon(Icons.shield),
-                                        label: const Text('행동 카드 보기'),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .error,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${DisasterTypeConfig.getConfig(disaster.type).displayName} - ${disaster.type}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '발생지: ${disaster.location}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ],
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // AI 행동 카드 미리보기
+                                  _ActionCardPreview(disasterId: disaster.id),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: () =>
+                                          _showShelterMapDialog(context),
+                                      icon: const Icon(Icons.map),
+                                      label: const Text('대피소 안내'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.safe,
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           )
@@ -489,46 +412,47 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
 
-                // 빠른 액션 섹션
-                Text(
-                  '빠른 액션',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                // 빠른 액션 섹션 제거, 원형 긴급전화 버튼만 표시
+                const SizedBox(height: 8),
+                Center(
+                  child: Column(
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(44),
+                        onTap: () => _showEmergencyContacts(context),
+                        child: Container(
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            color: AppColors.warning,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.phone,
+                              color: Colors.white,
+                              size: 36,
+                            ),
+                          ),
+                        ),
                       ),
-                ),
-                const SizedBox(height: 16),
-
-                // 빠른 액션 그리드
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: [
-                    _QuickActionCard(
-                      icon: Icons.shield_outlined,
-                      label: '행동카드',
-                      color: AppColors.critical,
-                      onTap: () => context.push('/action-card'),
-                    ),
-                    _QuickActionCard(
-                      icon: Icons.phone,
-                      label: '긴급전화',
-                      color: AppColors.warning,
-                      onTap: () => _showEmergencyContacts(context),
-                    ),
-                    _QuickActionCard(
-                      icon: Icons.favorite_outline,
-                      label: '안전수칙',
-                      color: AppColors.safe,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('준비 중입니다')),
-                        );
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      Text(
+                        '긴급전화',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 // FCM 테스트 섹션 (개발용)
@@ -656,6 +580,59 @@ class HomeScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  /// 대피소 지도 다이얼로그 표시
+  static void _showShelterMapDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          width: MediaQuery.of(context).size.width,
+          child: Column(
+            children: [
+              // 헤더
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.safe,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.map, color: Colors.white),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '대피소 안내',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // 지도 위젯
+              const Expanded(
+                child: ShelterMapWidget(showAppBar: false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// 테스트 시나리오 트리거
@@ -816,56 +793,178 @@ class _TestScenarioButton extends StatelessWidget {
   }
 }
 
-/// 빠른 액션 카드 위젯
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
+// (삭제됨) 빠른 액션 카드 위젯은 더 이상 사용하지 않습니다.
 
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
+/// 행동 카드 미리보기 위젯 (LLM 생성)
+class _ActionCardPreview extends ConsumerWidget {
+  final int disasterId;
+
+  const _ActionCardPreview({required this.disasterId});
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 현재 활성 재난 기반 행동 카드 가져오기
+    final actionCardAsync = ref.watch(currentActionCardProvider);
+
+    return actionCardAsync.when(
+      data: (actionCard) {
+        if (actionCard == null) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius:
+                  BorderRadius.circular(AppConstants.borderRadiusSmall),
+            ),
+            child: Text(
+              '행동 카드를 생성할 수 없습니다.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.grey,
+                  ),
+            ),
+          );
+        }
+
+        // 액션 카드 내용 표시 (상위 3개만)
+        final actionItems = actionCard.actionItems.take(3).toList();
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+            border: Border.all(
+              color: AppColors.safe.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+              // 헤더
+              Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    color: AppColors.safe,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'AI 추천 행동 요령',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.safe,
+                        ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              const SizedBox(height: 12),
+              // 행동 요령 목록
+              ...actionItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: AppColors.safe.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.safe,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              if (actionCard.actionItems.length > 3) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '+ ${actionCard.actionItems.length - 3}개 더보기',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ],
             ],
           ),
+        );
+      },
+      loading: () => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.safe),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'AI가 행동 요령을 생성하는 중...',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.grey,
+                  ),
+            ),
+          ],
+        ),
+      ),
+      error: (error, stack) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: AppColors.critical, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '행동 카드 생성 실패: ${error.toString()}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.critical,
+                    ),
+              ),
+            ),
+          ],
         ),
       ),
     );
