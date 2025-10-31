@@ -9,11 +9,11 @@ class AppTheme {
   // Light Theme
   static ThemeData get lightTheme {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.seedColor,
+      seedColor: AppColors.danger,
       brightness: Brightness.light,
       error: AppColors.critical,
       // 더 깔끔한 색상 조합
-      primary: AppColors.seedColor,
+      primary: AppColors.danger,
       secondary: const Color(0xFF4A90E2),
       surface: Colors.white,
       surfaceContainerHighest: const Color(0xFFF5F7FA),

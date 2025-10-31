@@ -45,13 +45,18 @@ class TrainingSession {
   final String userId;
   final Shelter shelter;
   final double initialDistance;
+  final DateTime startedAt;
 
   TrainingSession({
     required this.sessionId,
     required this.userId,
     required this.shelter,
     required this.initialDistance,
-  });
+    DateTime? startedAt,
+  }) : startedAt = startedAt ?? DateTime.now();
+
+  /// 세션 시작 이후 경과 시간
+  Duration get duration => DateTime.now().difference(startedAt);
 }
 
 /// 훈련 상태
@@ -159,6 +164,9 @@ class TrainingProvider extends ChangeNotifier {
         userId: response['user_id'],
         shelter: Shelter.fromJson(response['shelter']),
         initialDistance: (response['initial_distance'] as num).toDouble(),
+        startedAt: response['started_at'] != null
+            ? DateTime.parse(response['started_at'])
+            : DateTime.now(),
       );
 
       _state = _state.copyWith(
@@ -169,7 +177,7 @@ class TrainingProvider extends ChangeNotifier {
         isLoading: false,
       );
 
-      AppLogger.i('훈련 시작: session_id=${session.sessionId}');
+      AppLogger.i('훈련 시작: session_id=${session.sessionId}, initialDistance=${session.initialDistance}m');
       notifyListeners();
 
       // 1초마다 위치 체크 시작

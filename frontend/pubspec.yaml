@@ -26,6 +26,8 @@ dependencies:
   geolocator: ^11.0.0
   geocoding: ^2.2.0
   device_info_plus: ^10.0.1
+  flutter_polyline_points: ^2.0.0
+  http: ^1.2.0
   
   # Firebase
   firebase_core: ^2.24.2
@@ -80,6 +82,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
+    - assets/images/rewards/
     - assets/lottie/
     - .env
 

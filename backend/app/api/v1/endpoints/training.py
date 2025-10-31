@@ -236,7 +236,8 @@ async def start_training(
             shelter_id=shelter.id,
             shelter_name=shelter.name,
             status='ongoing',
-            started_at=datetime.utcnow()
+            started_at=datetime.utcnow(),
+            initial_distance=int(initial_distance)  # 초기 거리 저장
         )
         db.add(training_session)
         await db.commit()
@@ -525,7 +526,8 @@ async def dev_auto_complete_training(
             "is_completed": True,
             "points_earned": TRAINING_COMPLETION_POINTS,
             "total_points": user_points.total_points,
-            "distance": 0.0
+            "distance": float(session.initial_distance) if session.initial_distance else 0.0,  # 실제 이동 거리 반환
+            "duration": int((session.completed_at - session.started_at).total_seconds()) if session.completed_at else 0
         }
         
     except HTTPException:

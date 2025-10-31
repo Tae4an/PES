@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../config/constants.dart';
 
 /// 하단 네비게이션 바가 포함된 메인 레이아웃
 class MainLayout extends StatelessWidget {
@@ -49,8 +50,8 @@ class MainLayout extends StatelessWidget {
         selectedIndex: currentIndex,
         onDestinationSelected: (index) => _onItemTapped(context, index),
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+        backgroundColor: Colors.white,
+        indicatorColor: AppColors.danger.withOpacity(0.1),
         height: 70,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [

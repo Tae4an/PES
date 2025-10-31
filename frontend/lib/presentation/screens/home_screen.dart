@@ -25,6 +25,7 @@ class HomeScreen extends ConsumerWidget {
     final testMode = ref.watch(testModeProvider);
     final testDisaster = ref.watch(testDisasterProvider);
     final locationAsync = ref.watch(currentLocationProvider);
+    final addressAsync = ref.watch(currentAddressProvider);
 
     // 테스트 모드일 때는 testActionCardProvider, 아니면 currentActionCardProvider
     final actionCardAsync = testMode
@@ -65,6 +66,7 @@ class HomeScreen extends ConsumerWidget {
                   context,
                   activeDisasterAsync,
                   locationAsync,
+                  addressAsync,
                   testMode,
                   testDisaster,
                 ),
@@ -191,6 +193,7 @@ class HomeScreen extends ConsumerWidget {
     BuildContext context,
     AsyncValue activeDisasterAsync,
     AsyncValue locationAsync,
+    AsyncValue<String?> addressAsync,
     bool testMode,
     dynamic testDisaster,
   ) {
@@ -261,17 +264,19 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: locationAsync.when(
-                    data: (location) => Text(
-                      location != null
-                          ? '현재 위치: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}'
+                  child: addressAsync.when(
+                    data: (address) => Text(
+                      address != null && address.isNotEmpty
+                          ? '현재 위치: $address'
                           : '위치 정보 없음',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     loading: () => Text(
-                      '위치 확인 중...',
+                      '주소 확인 중...',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),

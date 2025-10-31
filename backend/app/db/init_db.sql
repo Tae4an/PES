@@ -81,7 +81,8 @@ CREATE TABLE IF NOT EXISTS training_sessions (
     status VARCHAR(20) DEFAULT 'ongoing',
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP,
-    points_earned INTEGER DEFAULT 0
+    points_earned INTEGER DEFAULT 0,
+    initial_distance INTEGER  -- 훈련 시작 시 대피소까지의 거리 (미터)
 );
 
 -- 인덱스
