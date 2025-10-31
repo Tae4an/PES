@@ -19,6 +19,7 @@ class TrainingSession(Base):
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     points_earned = Column(Integer, default=0)
+    initial_distance = Column(Integer, nullable=True)  # 훈련 시작 시 대피소까지의 거리 (미터)
     
     def __repr__(self):
         return f"<TrainingSession {self.id} - User {self.user_id}>"
