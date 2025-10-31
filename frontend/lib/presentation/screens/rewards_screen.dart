@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/rewards_provider.dart';
 import '../providers/training_user_provider.dart';
 import '../widgets/main_layout.dart';
@@ -232,27 +233,7 @@ class _RewardsScreenState extends State<RewardsScreen>
                     ],
                   ),
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _getPartnerIcon(reward.partner),
-                        size: 40,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        reward.partner,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                child: _buildRewardImage(reward),
               ),
               // 정보 영역 (오른쪽)
               Expanded(
@@ -338,6 +319,77 @@ class _RewardsScreenState extends State<RewardsScreen>
       '배달의민족': Icons.delivery_dining,
     };
     return iconMap[partner] ?? Icons.card_giftcard;
+  }
+
+  /// 보상 이미지 빌드 (이미지가 있으면 표시, 없으면 아이콘 표시)
+  Widget _buildRewardImage(Reward reward) {
+    // 이미지가 없으면 기존 아이콘 표시
+    if (reward.image.isEmpty) {
+      return _buildFallbackIcon(reward);
+    }
+
+    // URL인 경우 (http:// 또는 https://로 시작)
+    if (reward.image.startsWith('http://') || reward.image.startsWith('https://')) {
+      return ClipRect(
+        child: CachedNetworkImage(
+          imageUrl: reward.image,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white.withOpacity(0.7),
+            ),
+          ),
+          errorWidget: (context, url, error) => _buildFallbackIcon(reward),
+        ),
+      );
+    }
+
+    // 이미지 경로 생성
+    // 파일 이름만 있는 경우 (예: "oliveyoung.png") assets/images/rewards/ 경로 추가
+    // 전체 경로가 있는 경우 (예: "assets/images/rewards/oliveyoung.png") 그대로 사용
+    String imagePath = reward.image;
+    if (!imagePath.startsWith('assets/')) {
+      imagePath = 'assets/images/rewards/$imagePath';
+    }
+
+    // 로컬 asset 이미지인 경우
+    return ClipRect(
+      child: Image.asset(
+        imagePath,
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(reward),
+      ),
+    );
+  }
+
+  /// 이미지 로드 실패 시 표시할 아이콘
+  Widget _buildFallbackIcon(Reward reward) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _getPartnerIcon(reward.partner),
+            size: 40,
+            color: Colors.white.withOpacity(0.9),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            reward.partner,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showRedeemDialog(Reward reward) {
