@@ -1,6 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'local_notifications.dart';
 
 /// FCM 알림 핸들러 (로컬 알림 임시 비활성화)
 class NotificationHandler {
@@ -50,10 +50,15 @@ class NotificationHandler {
   Future<String?> _getToken() async {
     try {
       String? token = await _fcm.getToken();
-      _logger.i('FCM Token: $token');
+      if (token != null) {
+        _logger.i('FCM Token: $token');
+      } else {
+        _logger.w('FCM Token is null - This is expected on iOS Simulator');
+      }
       return token;
     } catch (e) {
-      _logger.e('Failed to get FCM token: $e');
+      _logger.w('Failed to get FCM token: $e');
+      _logger.w('Note: iOS Simulator does not support APNs. Use a real device or Android emulator for push notifications.');
       return null;
     }
   }
@@ -116,15 +121,18 @@ class NotificationHandler {
     return await _getToken();
   }
 
-  /// 로컬 알림 표시 (임시 비활성화)
+  /// 로컬 알림 표시 (시뮬레이터/테스트용)
   static Future<void> showLocalNotification({
     required String title,
     required String body,
     String? payload,
   }) async {
-    // 로컬 알림 대신 로그만 출력
-    final logger = Logger();
-    logger.i('Local notification (disabled): $title - $body');
+    await LocalNotificationsService().initialize();
+    await LocalNotificationsService().show(
+      title: title,
+      body: body,
+      payload: payload,
+    );
   }
 }
 

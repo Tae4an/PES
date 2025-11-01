@@ -113,24 +113,26 @@ class _PesAppState extends ConsumerState<PesApp> {
           AppLogger.e('FCM 토큰 서버 등록 실패: $e');
           // 토큰 등록 실패해도 앱은 계속 실행
         }
+      } else {
+        AppLogger.w('FCM 토큰을 가져올 수 없음 (iOS 시뮬레이터에서는 정상)');
+      }
 
-        // 자동 로그인 체크 (훈련 시스템)
-        try {
-          final trainingUserProvider = provider.Provider.of<TrainingUserProvider>(context, listen: false);
-          final isLoggedIn = await trainingUserProvider.checkAutoLogin();
-          
-          if (isLoggedIn) {
-            AppLogger.i('자동 로그인 성공 - userId: ${trainingUserProvider.state.userId}');
-            // 홈 화면으로 이동
-            if (context.mounted) {
-              context.go('/home');
-            }
-          } else {
-            AppLogger.i('로그인 필요 - 로그인 화면 유지');
+      // 자동 로그인 체크 (훈련 시스템) - FCM 토큰 여부와 무관하게 실행
+      try {
+        final trainingUserProvider = provider.Provider.of<TrainingUserProvider>(context, listen: false);
+        final isLoggedIn = await trainingUserProvider.checkAutoLogin();
+        
+        if (isLoggedIn) {
+          AppLogger.i('자동 로그인 성공 - userId: ${trainingUserProvider.state.userId}');
+          // 홈 화면으로 이동
+          if (context.mounted) {
+            context.go('/home');
           }
-        } catch (e) {
-          AppLogger.e('자동 로그인 체크 실패: $e');
+        } else {
+          AppLogger.i('로그인 필요 - 로그인 화면 유지');
         }
+      } catch (e) {
+        AppLogger.e('자동 로그인 체크 실패: $e');
       }
     } catch (e) {
       AppLogger.e('알림 초기화 실패: $e');
