@@ -59,7 +59,7 @@ dependencies:
   url_launcher: ^6.2.3
   permission_handler: ^11.2.0
   flutter_dotenv: ^5.1.0
-  # flutter_local_notifications: ^16.3.2  # Temporarily disabled
+  flutter_local_notifications: ^17.2.2
   
   # 아이콘
   cupertino_icons: ^1.0.6

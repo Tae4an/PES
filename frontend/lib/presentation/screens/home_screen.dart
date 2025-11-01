@@ -14,6 +14,7 @@ import '../widgets/error_card.dart';
 import '../widgets/main_layout.dart';
 import '../widgets/action_card_widget.dart';
 import '../widgets/shelter_map_widget.dart';
+import '../../core/notifications/notification_handler.dart';
 
 /// 홈 화면
 class HomeScreen extends ConsumerWidget {
@@ -41,6 +42,17 @@ class HomeScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => context.push('/notifications'),
+            ),
+            // Mock Push 버튼 (시뮬레이터에서 로컬 알림 테스트)
+            IconButton(
+              tooltip: 'Mock Push',
+              icon: const Icon(Icons.notifications_active),
+              onPressed: () async {
+                await NotificationHandler.showLocalNotification(
+                  title: '🚨 [테스트] 재난 경보',
+                  body: '시뮬레이터용 Mock Push입니다. 실제 FCM처럼 표시됩니다.',
+                );
+              },
             ),
             IconButton(
               icon: const Icon(Icons.refresh),

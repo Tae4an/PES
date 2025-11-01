@@ -3,7 +3,7 @@ FCM (Firebase Cloud Messaging) 관련 API 엔드포인트
 """
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict
 import logging
 from datetime import datetime
 
@@ -35,6 +35,16 @@ class TestNotificationRequest(BaseModel):
     fcm_token: str = Field(..., description="테스트할 FCM 토큰")
     title: str = Field("PES 테스트 알림", description="알림 제목")
     body: str = Field("Firebase 푸시 알림이 정상적으로 작동합니다!", description="알림 내용")
+
+
+class SimplePushRequest(BaseModel):
+    """간단한 푸시 알림 요청"""
+    fcm_token: str = Field(..., description="FCM 토큰")
+    title: str = Field(..., description="알림 제목", min_length=1)
+    body: str = Field(..., description="알림 내용", min_length=1)
+    data: Optional[dict] = Field(None, description="추가 데이터 (선택사항)")
+    priority: str = Field("high", description="우선순위 (high, normal)")
+    channel_id: str = Field("default", description="알림 채널 ID")
 
 
 @router.post("/token/register", response_model=FCMTokenResponse)
@@ -159,6 +169,112 @@ async def get_fcm_status():
             "error": str(e),
             "checked_at": datetime.now().isoformat()
         }
+
+
+@router.post("/send")
+async def send_push_notification(request: SimplePushRequest):
+    """
+    간단한 푸시 알림 전송 (범용)
+    
+    지정된 FCM 토큰으로 커스텀 푸시 알림을 전송합니다.
+    테스트용이나 일반 알림 전송에 사용할 수 있습니다.
+    
+    **예시:**
+    ```json
+    {
+        "fcm_token": "dA1B2c3D4e5F6g7H8i9J0k...",
+        "title": "긴급 알림",
+        "body": "재난 상황이 발생했습니다!",
+        "data": {
+            "screen": "disaster_detail",
+            "disaster_id": "12345"
+        },
+        "priority": "high",
+        "channel_id": "emergency"
+    }
+    ```
+    """
+    try:
+        # FCM 클라이언트 초기화 확인
+        if not fcm_client.initialized:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Firebase Admin SDK가 초기화되지 않았습니다. 서비스 계정 키를 확인하세요."
+            )
+        
+        # Firebase 메시지 준비
+        from firebase_admin import messaging
+        
+        # 기본 데이터 필드 (FCM data는 모든 값이 문자열이어야 함)
+        data_payload = {
+            "timestamp": datetime.now().isoformat(),
+            "sent_from": "api"
+        }
+        
+        # 사용자 정의 데이터 추가 (모든 값을 문자열로 변환)
+        if request.data:
+            import json
+            for key, value in request.data.items():
+                if isinstance(value, (dict, list)):
+                    data_payload[key] = json.dumps(value)
+                else:
+                    data_payload[key] = str(value)
+        
+        # Android 설정
+        android_config = messaging.AndroidConfig(
+            priority=request.priority,
+            ttl=3600,  # 1시간
+            notification=messaging.AndroidNotification(
+                channel_id=request.channel_id,
+                priority="max" if request.priority == "high" else "default"
+            )
+        )
+        
+        # iOS(APNs) 설정
+        apns_config = messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    alert=messaging.ApsAlert(
+                        title=request.title,
+                        body=request.body
+                    ),
+                    badge=1,
+                    sound="default"
+                )
+            )
+        )
+        
+        # 메시지 생성
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=request.title,
+                body=request.body
+            ),
+            data=data_payload,
+            android=android_config,
+            apns=apns_config,
+            token=request.fcm_token
+        )
+        
+        # 메시지 전송
+        response = messaging.send(message)
+        logger.info(f"푸시 알림 전송 성공: {response}")
+        
+        return {
+            "success": True,
+            "message": "푸시 알림이 성공적으로 전송되었습니다.",
+            "message_id": response,
+            "sent_at": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"푸시 알림 전송 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"푸시 알림 전송 실패: {str(e)}"
+        )
 
 
 @router.post("/emergency/broadcast")
